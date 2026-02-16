@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, OnModuleInit, Logger } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { RedisModule } from '@nestjs-modules/ioredis';
@@ -19,6 +19,8 @@ import { AuditModule } from './modules/audit/audit.module';
 import { HealthModule } from './modules/health/health.module';
 import { EventsModule } from './shared/events/events.module';
 import { EmailModule } from './modules/email/email.module';
+import { RolesService } from './modules/roles/services/roles.service';
+// ❌ REMOVE: import { UsersSeeder } from './modules/users/users.seeder';
 
 @Module({
   imports: [
@@ -60,15 +62,40 @@ import { EmailModule } from './modules/email/email.module';
       }),
       inject: [ConfigService],
     }),
+
+    // Feature Modules
     EmailModule,
-    AuthModule,
-    UsersModule,
-    RolesModule,
+    EventsModule,
     PermissionsModule,
+    RolesModule,
+    UsersModule,
+    AuthModule,
     SessionsModule,
     AuditModule,
     HealthModule,
-    EventsModule,
   ],
+  // ❌ REMOVE: providers: [UsersSeeder],
 })
-export class AppModule {}
+export class AppModule implements OnModuleInit {
+  private readonly logger = new Logger(AppModule.name);
+
+  constructor(
+    private readonly rolesService: RolesService,
+    // ❌ REMOVE: private readonly usersSeeder: UsersSeeder,
+  ) {}
+
+  async onModuleInit() {
+    setTimeout(async () => {
+      this.logger.log('🌱 Seeding system roles...');
+      try {
+        await this.rolesService.seedSystemRoles();
+        this.logger.log('✅ System roles seeded successfully');
+        
+        // ❌ REMOVE: await this.usersSeeder.seedAdminUser();
+        // The UsersSeeder will run automatically from UsersModule
+      } catch (error: any) {
+        this.logger.error('❌ Failed to seed:', error?.message || String(error));
+      }
+    }, 2000);
+  }
+}

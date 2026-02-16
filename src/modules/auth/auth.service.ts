@@ -36,9 +36,9 @@ export class AuthService {
     private readonly sessionsService: SessionsService,
     private readonly auditService: AuditService,
     private readonly authRepository: AuthRepository,
-        private readonly emailService: EmailService, 
+    private readonly emailService: EmailService,
 
-  ) {}
+  ) { }
 
   async register(dto: RegisterDto, ip?: string, userAgent?: string): Promise<TokenResponseDto> {
     // Check if user exists
@@ -59,10 +59,10 @@ export class AuthService {
 
     // Generate verification token
     const verificationToken = this.jwtService.sign(
-      { 
-        sub: user.id, 
-        email: user.email, 
-        type: 'email-verification' 
+      {
+        sub: user.id,
+        email: user.email,
+        type: 'email-verification'
       },
       {
         secret: this.configService.get('jwt.access.secret'),
@@ -95,95 +95,120 @@ export class AuthService {
       userId: user.id,
       action: 'USER_REGISTERED',
       resource: 'auth',
-      details: { 
+      details: {
         email: dto.email,
-        verificationEmailCaptured: true 
+        verificationEmailCaptured: true
       },
       ipAddress: ip,
       userAgent,
     });
 
     this.logger.log(`User registered: ${user.email}`);
-    
+
     // Return with helpful message
     return {
       ...tokens,
       message: 'Registration successful! Check the email capture interface to verify your email.',
     } as any;
   }
-async verifyEmail(token: string): Promise<{ success: boolean; message: string }> {
-  try {
-    const payload = this.jwtService.verify(token, {
-      secret: this.configService.get('jwt.access.secret'),
-    });
+  async verifyEmail(token: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const payload = this.jwtService.verify(token, {
+        secret: this.configService.get('jwt.access.secret'),
+      });
 
-    if (payload.type !== 'email-verification') {
-      throw new UnauthorizedException('Invalid token type');
+      if (payload.type !== 'email-verification') {
+        throw new UnauthorizedException('Invalid token type');
+      }
+
+      const user = await this.usersService.findById(payload.sub);
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      if (user.emailVerified) {
+        return { success: true, message: 'Email already verified' };
+      }
+
+      await this.usersService.update(user.id, { emailVerified: true });
+
+      this.logger.log(`Email verified: ${user.email}`);
+
+      return {
+        success: true,
+        message: 'Email verified successfully! You can now log in.'
+      };
+    } catch (error) {
+      throw new UnauthorizedException('Invalid or expired verification token');
     }
-
-    const user = await this.usersService.findById(payload.sub);
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    if (user.emailVerified) {
-      return { success: true, message: 'Email already verified' };
-    }
-
-    await this.usersService.update(user.id, { emailVerified: true });
-
-    this.logger.log(`Email verified: ${user.email}`);
-
-    return { 
-      success: true, 
-      message: 'Email verified successfully! You can now log in.' 
-    };
-  } catch (error) {
-    throw new UnauthorizedException('Invalid or expired verification token');
   }
-}
   async login(dto: LoginDto, ip?: string, userAgent?: string): Promise<TokenResponseDto> {
-    const user = await this.validateUser(dto.email, dto.password);
-    
-    if (!user.isActive) {
-      throw new UnauthorizedException('Account is disabled');
-    }
+  const user = await this.validateUser(dto.email, dto.password);
 
-    if (!user.emailVerified) {
-      throw new UnauthorizedException('Email not verified');
-    }
-
-    // Check for existing sessions limit (enterprise: max 5 concurrent sessions)
-    await this.sessionsService.enforceSessionLimit(user.id, 5);
-
-    // Generate tokens
-    const tokens = await this.generateTokenPair(user);
-
-    // Create session
-    await this.sessionsService.create({
-      userId: user.id,
-      refreshToken: tokens.refreshToken,
-      ipAddress: ip,
-      userAgent,
-      expiresAt: this.calculateExpiryDate('refresh'),
-    });
-
-    // Update last login
-    await this.usersService.updateLastLogin(user.id);
-
-    // Audit log
-    await this.auditService.log({
-      userId: user.id,
-      action: 'USER_LOGIN',
-      resource: 'auth',
-      details: { method: 'password' },
-      ipAddress: ip,
-      userAgent,
-    });
-
-    this.logger.log(`User logged in: ${user.email} from ${ip}`);
-    return tokens;
+  if (!user.isActive) {
+    throw new UnauthorizedException('Account is disabled');
   }
+
+  if (!user.emailVerified) {
+    throw new UnauthorizedException('Email not verified');
+  }
+
+  // ✅ Load user with roles and permissions
+  const userWithRoles = await this.usersService.findByIdWithRolesAndPermissions(user.id);
+
+  // ✅ Add null check
+  if (!userWithRoles) {
+    throw new UnauthorizedException('User not found');
+  }
+
+  // Check for existing sessions limit (enterprise: max 5 concurrent sessions)
+  await this.sessionsService.enforceSessionLimit(user.id, 5);
+
+  // Generate tokens
+  const tokens = await this.generateTokenPair(userWithRoles);
+
+  // Create session
+  await this.sessionsService.create({
+    userId: user.id,
+    refreshToken: tokens.refreshToken,
+    ipAddress: ip,
+    userAgent,
+    expiresAt: this.calculateExpiryDate('refresh'),
+  });
+
+  // Update last login
+  await this.usersService.updateLastLogin(user.id);
+
+  // Audit log
+  await this.auditService.log({
+    userId: user.id,
+    action: 'USER_LOGIN',
+    resource: 'auth',
+    details: { method: 'password' },
+    ipAddress: ip,
+    userAgent,
+  });
+
+  this.logger.log(`User logged in: ${user.email} from ${ip}`);
+  
+  // ✅ Return tokens with user info including roles and permissions
+  return {
+    ...tokens,
+    user: {
+      id: userWithRoles.id,
+      email: userWithRoles.email,
+      firstName: userWithRoles.firstName,
+      lastName: userWithRoles.lastName,
+      roles: userWithRoles.roles?.map(r => ({
+        id: r.id,
+        name: r.name,
+        type: r.type,
+        isSystem: r.isSystem,
+      })),
+      permissions: this.extractPermissions(userWithRoles),
+    },
+  } as any;
+}
 
   async refreshTokens(dto: RefreshTokenDto, ip?: string, userAgent?: string): Promise<TokenResponseDto> {
     try {
@@ -274,42 +299,42 @@ async verifyEmail(token: string): Promise<{ success: boolean; message: string }>
   }
 
   // Service-to-service validation
-async validateApiKey(apiKey: string): Promise<{ serviceId: string; permissions: string[] } | null> {
-  return this.authRepository.validateServiceApiKey(apiKey);
-}
+  async validateApiKey(apiKey: string): Promise<{ serviceId: string; permissions: string[] } | null> {
+    return this.authRepository.validateServiceApiKey(apiKey);
+  }
 
-  private async generateTokenPair(user: User): Promise<TokenResponseDto> {
-  const jti = uuidv4();
+private async generateTokenPair(user: User): Promise<TokenResponseDto> {
+    const jti = uuidv4();
 
-  const [accessToken, refreshToken] = await Promise.all([
-    this.jwtService.signAsync({
-      sub: user.id,
-      email: user.email,
-      roles: user.roles?.map(r => r.name) || [],
-      permissions: this.extractPermissions(user),
-      type: 'access',
-      jti,
-    }),
-    this.jwtService.signAsync(
-      {
+    const [accessToken, refreshToken] = await Promise.all([
+      this.jwtService.signAsync({
         sub: user.id,
-        type: 'refresh',
-        jti: uuidv4(),
-      },
-      {
-        secret: this.configService.get('jwt.refresh.secret'),
-        expiresIn: this.configService.get('jwt.refresh.expiresIn'),
-      },
-    ),
-  ]);
+        email: user.email,
+        roles: user.roles?.map(r => r.name) || [],
+        permissions: this.extractPermissions(user),
+        type: 'access',
+        jti,
+      }),
+      this.jwtService.signAsync(
+        {
+          sub: user.id,
+          type: 'refresh',
+          jti: uuidv4(),
+        },
+        {
+          secret: this.configService.get('jwt.refresh.secret'),
+          expiresIn: this.configService.get('jwt.refresh.expiresIn'),
+        },
+      ),
+    ]);
 
-  return {
-    accessToken,
-    refreshToken,
-    expiresIn: this.configService.get('jwt.access.expiresIn') || '15m',
-    tokenType: 'Bearer',
-  };
-}
+    return {
+      accessToken,
+      refreshToken,
+      expiresIn: this.configService.get('jwt.access.expiresIn') || '15m',
+      tokenType: 'Bearer',
+    };
+  }
 
   private extractPermissions(user: User): string[] {
     const permissions = new Set<string>();

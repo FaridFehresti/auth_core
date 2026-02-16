@@ -6,50 +6,50 @@ import { Role } from '../../roles/entities/role.entity';
 export class UserResponseDto {
   @Expose()
   @ApiProperty()
-  id: string;
+  id!: string;
 
   @Expose()
   @ApiProperty()
-  email: string;
+  email!: string;
 
   @Expose()
   @ApiProperty()
-  firstName: string;
+  firstName!: string;
 
   @Expose()
   @ApiProperty()
-  lastName: string;
+  lastName!: string;
 
   @Expose()
   @ApiProperty()
-  fullName: string;
+  fullName!: string;
 
   @Expose()
   @ApiProperty()
-  emailVerified: boolean;
+  emailVerified!: boolean;
 
   @Expose()
   @ApiProperty()
-  isActive: boolean;
+  isActive!: boolean;
 
   @Expose()
   @ApiProperty()
-  mfaEnabled: boolean;
+  mfaEnabled!: boolean;
 
   @Expose()
   @Type(() => Role)
   @ApiProperty({ type: [Role] })
-  roles: Role[];
+  roles!: Role[];
 
   @Expose()
   @ApiProperty()
-  lastLoginAt: Date;
+  lastLoginAt!: Date;
 
   @Expose()
   @ApiProperty()
-  createdAt: Date;
+  createdAt!: Date;
 
   @Expose()
   @ApiProperty()
-  updatedAt: Date;
+  updatedAt!: Date;
 }

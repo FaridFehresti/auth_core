@@ -1,0 +1,219 @@
+1. Overview
+This application implements a Dynamic Role-Based Access Control (RBAC) system. Unlike static permission systems, this architecture features an Auto-Discovery Mechanism.
+When the application starts, it scans all Controllers for specific decorators, automatically registers new permissions in the database, and synchronizes them with the codebase. This ensures that the database permissions always match the available API routes.
+Key Features
+Auto-Registration: Permissions are created automatically based on controller decorators.
+Sync Mechanism: Removed routes automatically deactivate associated permissions.
+Granularity: Permissions are defined by Resource + Action (e.g., users:create).
+System Roles: Built-in admin and user roles that seed on startup.
+Scopes: Supports Global, Module, and Resource-level permission scoping.
+2. Architecture Flow
+mermaid
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+3. Folder Structure
+The RBAC logic is distributed across modules, common, and entities.
+text
+1234567891011121314151617181920212223242526
+src/
+├── common/
+│   └── decorators/
+│       └── require-permission.decorator.ts   # @CanRead, @CanCreate, etc.
+├── modules/
+│   ├── permissions/
+│   │   ├── entities/
+│   │   │   └── permission.entity.ts          # DB Schema for Permissions
+│   │   ├── services/
+│   │   │   ├── permissions.service.ts        # CRUD for Permissions
+│   │   │   └── permission-scanner.service.ts # 🌟 Auto-Discovery Logic
+│   │   ├── permissions.controller.ts         # API to view permissions
+│   │   └── permissions.module.ts
+│   ├── roles/
+│   │   ├── entities/
+│   │   │   └── role.entity.ts                # DB Schema for Roles
+│   │   ├── services/
+│   │   │   └── roles.service.ts              # Role Management & Seeding
+│   │   ├── roles.controller.ts               # API to manage Roles
+│   │   └── roles.module.ts
+│   ├── users/
+│   │   └── users.controller.ts               # Example Implementation
+│   └── auth/
+│       └── guards/
+│           └── permissions.guard.ts          # (Implied) Enforces access
+└── app.module.ts                             # Includes AppSeeder
+
+4. Database Schema
+4.1 Permissions Table (permissions)
+Stores every actionable endpoint in the system.
+Column
+Type
+Description
+id
+UUID
+Primary Key
+code
+String
+Unique identifier (e.g., users:create). Indexed.
+name
+String
+Human-readable name (e.g., Users: Create).
+scope
+Enum
+GLOBAL, MODULE, RESOURCE.
+module_name
+String
+The module owning this permission (e.g., users).
+resource
+String
+The entity being accessed (e.g., users).
+action
+String
+The operation (e.g., create, read).
+http_method
+String
+HTTP Verb (GET, POST, etc.).
+route_path
+String
+The API path (e.g., /users/:id).
+is_system
+Boolean
+If true, cannot be deleted (managed by code).
+is_active
+Boolean
+Soft delete flag.
+4.2 Roles Table (roles)
+Groups permissions together to assign to users.
+Column
+Type
+Description
+id
+UUID
+Primary Key
+name
+String
+Unique role name (e.g., admin, editor). Indexed.
+type
+Enum
+SYSTEM (locked) or CUSTOM.
+is_system
+Boolean
+Prevents deletion of core roles.
+is_default
+Boolean
+Auto-assigned to new users upon registration.
+4.3 Relationships
+Role ↔ Permission: Many-to-Many.
+Join Table: role_permissions
+Role ↔ User: Many-to-Many.
+(Handled in User Entity, not shown in snippet but implied).
+5. Core Components Explained
+5.1 Permission Scanner (permission-scanner.service.ts)
+This is the heart of the system. It implements OnModuleInit.
+Iterates: Loops through all registered NestJS Modules.
+Reflects: Checks every Controller method for the PERMISSIONS_KEY metadata.
+Syncs:
+If a permission code exists in code but not DB → Create.
+If a permission exists in DB (and is system) but not in code → Deactivate.
+Logs: Outputs creation/deactivation events to the console.
+5.2 Decorators (require-permission.decorator.ts)
+Used to mark protected routes. When applied, they register the permission with the Scanner.
+Available Decorators:
+@RequirePermission(resource, action) -> Generic
+@CanRead(resource) -> Maps to resource:read
+@CanCreate(resource) -> Maps to resource:create
+@CanUpdate(resource) -> Maps to resource:update
+@CanDelete(resource) -> Maps to resource:delete
+@CanManage(resource) -> Maps to resource:manage
+Example Usage:
+typescript
+123
+@Post()
+@CanCreate('users')  // Registers 'users:create'
+async create(@Body() dto: CreateUserDto) { ... }
+5.3 Roles Service (roles.service.ts)
+Handles role logic and initialization.
+seedSystemRoles(): Runs on startup.
+Creates Admin: Assigns ALL existing permissions.
+Creates User: Default role for new signups (initially empty or basic).
+Protection: Prevents modification or deletion of roles where isSystem === true.
+6. Permission Lifecycle
+Development: Developer adds a new Controller method and adds @CanRead('products').
+Startup: Application restarts. PermissionScannerService detects the new decorator.
+Registration: A new row products:read is inserted into the permissions table.
+Assignment:
+If the role is Admin, it automatically gains this permission (via seed logic or manual assignment).
+If Custom, an admin must assign products:read to the role via the Roles API.
+Enforcement: When a request hits GET /products, PermissionsGuard checks if the user's Role contains products:read.
+7. API Endpoints for Management
+You can use your test HTML app to interact with these endpoints to manage access.
+Permissions
+Method
+Endpoint
+Description
+Permission Required
+GET
+/permissions
+List all system permissions
+permissions:read
+GET
+/permissions/by-module/:module
+Filter by module
+permissions:read
+Roles
+Method
+Endpoint
+Description
+Permission Required
+GET
+/roles
+List all roles (with permissions)
+roles:read
+POST
+/roles
+Create custom role
+roles:create
+PUT
+/roles/:id
+Update role permissions
+roles:update
+DELETE
+/roles/:id
+Delete custom role
+roles:delete
+8. Testing Strategy (For your HTML App)
+Since you have a test HTML application, here is the recommended flow to verify the system:
+Login as Admin: Get a JWT token for a user with the admin role.
+Verify Scan: Check the server console logs. You should see:
+🔍 Scanning for permissions...
+➕ Created permission: users:create (etc.)
+✅ Created admin role with all permissions
+List Permissions: Call GET /permissions. Verify that every decorated route in your code appears in this list.
+Create Custom Role:
+Call POST /roles with name manager and permissionCodes: ['users:read', 'users:update'].
+Assign Role: (Via User Module) Assign the manager role to a test user.
+Test Access:
+Login as the manager user.
+Try GET /users (Should Pass).
+Try DELETE /users/:id (Should Fail with 403 Forbidden).
+9. Important Notes for Developers
+Do Not Edit System Permissions Manually: Permissions marked isSystem: true are managed by code. If you change the decorator in code, the DB will update on restart. Do not edit them directly in the DB.
+Module Imports: Ensure PermissionsModule is imported globally or into any module that contains controllers you want scanned, otherwise the ModulesContainer might not see them depending on your NestJS configuration.
+Guard Dependency: Ensure PermissionsGuard is active globally or on specific controllers. The decorators only register the permission; the Guard enforces it.
+Route Paths: The scanner captures the route path. If you use dynamic prefixes (e.g., api/v1), ensure the Controller decorator reflects the full path so the routePath in the database is accurate for documentation purposes.

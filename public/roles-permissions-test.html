@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LifeOS - Roles & Permissions Test</title>
+    <style>
+        /* --- CORE STYLES --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0b1220;
+            --bg-secondary: #121a2b;
+            --bg-tertiary: #1e293b;
+            --border: #2a354a;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --accent: #6366f1;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app {
+            display: grid;
+            grid-template-columns: 220px 1fr 420px;
+            height: 100vh;
+        }
+
+        @media(max-width:1200px) {
+            .app {
+                grid-template-columns: 220px 1fr;
+            }
+
+            .terminal-panel {
+                display: none;
+            }
+        }
+
+        .sidebar {
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            padding: 16px 12px;
+        }
+
+        .sidebar h1 {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 18px;
+            letter-spacing: .6px;
+        }
+
+        .menu {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .menu a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid transparent;
+        }
+
+        .menu a:hover {
+            background: var(--bg-tertiary);
+            color: #fff;
+        }
+
+        .menu a.active {
+            background: var(--bg-tertiary);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        .main {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-secondary);
+            font-size: 12px;
+            gap: 10px;
+        }
+
+        .endpoint {
+            font-family: monospace;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn {
+            border: none;
+            background: var(--bg-tertiary);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: #334155;
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 11px;
+        }
+
+        .btn-icon {
+            padding: 6px 10px;
+        }
+
+        .token-input-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .token-input {
+            width: 250px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 11px;
+        }
+
+        .token-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .token-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .token-status.valid {
+            background: rgba(16, 185, 129, .2);
+            color: var(--success);
+        }
+
+        .token-status.invalid {
+            background: rgba(239, 68, 68, .2);
+            color: var(--error);
+        }
+
+        .status-badge {
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            margin-left: 10px;
+        }
+
+        .status-online {
+            background: rgba(16, 185, 129, .2);
+            color: var(--success);
+        }
+
+        .status-offline {
+            background: rgba(239, 68, 68, .2);
+            color: var(--error);
+        }
+
+        .content {
+            padding: 20px;
+            overflow: auto;
+            height: 100%;
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 16px;
+        }
+
+        .card-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-body {
+            padding: 16px;
+        }
+
+        .card-footer {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border);
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            color: #fff;
+            padding: 10px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        button.action {
+            margin-top: 12px;
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button.action:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .primary {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .success {
+            background: var(--success);
+            color: #000;
+        }
+
+        .warning {
+            background: var(--warning);
+            color: #000;
+        }
+
+        .danger {
+            background: var(--error);
+            color: #fff;
+        }
+
+        .info {
+            background: var(--info);
+            color: #fff;
+        }
+
+        .response {
+            margin-top: 12px;
+            background: #000;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px;
+            display: none;
+            max-height: 200px;
+            overflow: auto;
+        }
+
+        .badge {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-left: 8px;
+            display: inline-block;
+        }
+
+        .badge-success {
+            background: rgba(16, 185, 129, .2);
+            color: var(--success);
+        }
+
+        .badge-system {
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--accent);
+        }
+
+        .badge-warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+
+        .permission-list,
+        .role-list,
+        .user-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px;
+            background: var(--bg-primary);
+        }
+
+        .permission-item,
+        .role-item,
+        .user-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .permission-item:hover,
+        .role-item:hover,
+        .user-item:hover {
+            border-color: var(--accent);
+            transform: translateX(2px);
+        }
+
+        .perm-code {
+            font-family: monospace;
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        .perm-details {
+            color: var(--text-secondary);
+            font-size: 11px;
+        }
+
+        .role-badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .role-badge-system {
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--accent);
+        }
+
+        .role-badge-custom {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .checkbox-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 6px;
+            max-height: 250px;
+            overflow-y: auto;
+            background: var(--bg-primary);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin-top: 10px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            cursor: pointer;
+            padding: 6px 8px;
+            border-radius: 4px;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .checkbox-label:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .checkbox-label input {
+            width: auto;
+            accent-color: var(--accent);
+        }
+
+        .checkbox-label.selected {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--accent);
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        .search-box input {
+            padding-left: 35px;
+        }
+
+        .search-box::before {
+            content: '🔍';
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .user-role-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .user-search-result {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 10px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .current-roles {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .role-tag {
+            padding: 4px 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .role-tag button {
+            background: none;
+            border: none;
+            color: var(--error);
+            cursor: pointer;
+            padding: 0;
+            font-size: 14px;
+        }
+
+        .role-tag button:hover {
+            color: #ff6b6b;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 4px 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .filter-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .terminal-panel {
+            background: #000;
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .terminal-header {
+            display: flex;
+            justify-content: space-between;
+            padding: 14px 18px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .terminal-body {
+            flex: 1;
+            overflow: auto;
+            padding: 16px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .log-entry {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+
+        .log-info {
+            color: #60a5fa;
+        }
+
+        .log-success {
+            color: #10b981;
+        }
+
+        .log-error {
+            color: #ef4444;
+        }
+
+        .log-warning {
+            color: #f59e0b;
+        }
+
+        .log-timestamp {
+            color: var(--text-secondary);
+            margin-right: 8px;
+        }
+
+        .empty-state {
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+
+        .empty-state-text {
+            font-size: 13px;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: var(--text-secondary);
+        }
+
+        .loading::before {
+            content: '';
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            margin-right: 10px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <div class="sidebar">
+            <h1>🛠️ DEV TEST MENU</h1>
+            <div class="menu">
+                <a href="index.html">🔐 Auth Tests</a>
+                <a href="users-test.html">👥 User Tests</a>
+                <a href="#" class="active">🛡️ Roles & Permissions</a>
+            </div>
+        </div>
+        <div class="main">
+            <div class="topbar">
+                <div class="endpoint">
+                    <span id="api-endpoint">http://localhost:3000/api/v1</span>
+                    <span id="api-status-badge" class="status-badge status-offline"></span>
+                    <span id="api-status-text">Checking...</span>
+                </div>
+                <div class="token-input-container">
+                    <input type="text" id="manual-token" class="token-input" placeholder="Paste JWT Token..." />
+                    <button class="btn success btn-sm" onclick="RBACTest.saveToken()">Save</button>
+                    <button class="btn btn-sm" onclick="RBACTest.clearToken()">Clear</button>
+                    <span id="token-status" class="token-status invalid">No Token</span>
+                </div>
+                <div style="display:flex;gap:6px;">
+                    <button class="btn btn-sm"
+                        onclick="RBACTest.setEndpoint('http://localhost:3000/api/v1')">Local</button>
+                    <button class="btn btn-sm"
+                        onclick="RBACTest.setEndpoint('http://localhost:3001/api/v1')">Docker</button>
+                    <button class="btn btn-sm" onclick="RBACTest.openSwagger()">Swagger</button>
+                    <button class="btn btn-sm" onclick="RBACTest.clearAllData()">Reset</button>
+                </div>
+            </div>
+            <div class="content">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-permissions">-</div>
+                        <div class="stat-label">Permissions</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-roles">-</div>
+                        <div class="stat-label">Roles</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-users">-</div>
+                        <div class="stat-label">Users</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <span>🛡️ System Permissions</span>
+                        <div style="display:flex;gap:8px;">
+                            <button class="btn btn-sm" onclick="RBACTest.togglePermissionFilter()">Filter</button>
+                            <button class="btn btn-sm" onclick="RBACTest.loadPermissions()">Refresh</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="search-box">
+                            <input type="text" id="permission-search" placeholder="Search permissions..."
+                                onkeyup="RBACTest.filterPermissions()" />
+                        </div>
+                        <div class="filter-bar" id="permission-filters" style="display:none;">
+                            <button class="filter-btn active" data-filter="all">All</button>
+                            <button class="filter-btn" data-filter="users">Users</button>
+                            <button class="filter-btn" data-filter="roles">Roles</button>
+                            <button class="filter-btn" data-filter="permissions">Permissions</button>
+                            <button class="filter-btn" data-filter="auth">Auth</button>
+                        </div>
+                        <div id="permissions-list" class="permission-list">
+                            <div class="loading">Loading permissions...</div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <span id="permission-count">0 permissions loaded</span>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <span>👥 Roles</span>
+                        <button class="btn btn-sm" onclick="RBACTest.loadRoles()">Refresh</button>
+                    </div>
+                    <div class="card-body">
+                        <div id="roles-list" class="role-list">
+                            <div class="loading">Loading roles...</div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <span id="role-count">0 roles loaded</span>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <span>👤 Assign Role to User</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-grid">
+                            <div>
+                                <input id="user-search-input" placeholder="Search user by email..." />
+                                <button class="action info" onclick="RBACTest.searchUser()">Search User</button>
+                            </div>
+                            <div>
+                                <select id="assign-role-select">
+                                    <option value="">Select Role...</option>
+                                </select>
+                                <button class="action warning" onclick="RBACTest.assignRoleToUser()">Assign
+                                    Role</button>
+                            </div>
+                        </div>
+                        <div id="user-search-result" class="user-search-result" style="display:none;">
+                            <div class="user-info">
+                                <div class="user-avatar" id="user-avatar">U</div>
+                                <div>
+                                    <div style="font-weight:bold;" id="user-display-name">-</div>
+                                    <div style="font-size:11px;color:var(--text-secondary);" id="user-display-email">-
+                                    </div>
+                                    <div class="current-roles" id="user-current-roles"></div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="selected-user-id" />
+                        </div>
+                        <div id="assign-response" class="response">
+                            <span id="assign-status" class="badge"></span>
+                            <pre id="assign-result"></pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <span id="role-form-title">➕ Create New Role</span>
+                        <button class="btn btn-sm" id="cancel-edit-btn" onclick="RBACTest.resetRoleForm()"
+                            style="display:none;">Cancel</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-grid">
+                            <input id="role-name" placeholder="Role Name (e.g., Manager)" />
+                            <input id="role-desc" placeholder="Description" />
+                        </div>
+                        <div style="margin-top:15px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;">
+                                <label style="font-size:12px; color:var(--text-secondary);">Assign Permissions:</label>
+                                <div style="font-size:11px;color:var(--text-secondary);">
+                                    <span id="selected-perm-count">0</span> selected
+                                </div>
+                            </div>
+                            <div id="permission-selector" class="checkbox-grid">
+                                <div class="loading">Load permissions first...</div>
+                            </div>
+                        </div>
+                        <button class="action primary" id="save-role-btn" onclick="RBACTest.saveRole()">Create
+                            Role</button>
+                        <div id="role-response" class="response">
+                            <span id="role-status" class="badge"></span>
+                            <pre id="role-result"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="terminal-panel">
+            <div class="terminal-header">
+                <span>📋 API Activity Log</span>
+                <div style="display:flex;gap:6px;">
+                    <button class="btn btn-sm" onclick="RBACTest.copyLogs()">Copy</button>
+                    <button class="btn btn-sm" onclick="RBACTest.clearLogs()">Clear</button>
+                </div>
+            </div>
+            <div class="terminal-body" id="logger">
+                <div class="log-entry log-info"><span class="log-timestamp">[SYSTEM]</span> Logger initialized...</div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const RBACTest = {
+            API_BASE: localStorage.getItem('api-endpoint') || 'http://localhost:3000/api/v1',
+            accessToken: localStorage.getItem('access-token') || '',
+            allPermissions: [],
+            filteredPermissions: [],
+            allRoles: [],
+            selectedPermissions: new Set(),
+            isEditing: false,
+            currentFilter: 'all',
+            init: function () {
+                document.getElementById('api-endpoint').textContent = this.API_BASE;
+                if (this.accessToken) {
+                    document.getElementById('manual-token').value = this.accessToken;
+                    this.updateTokenStatus(true);
+                }
+                this.checkApiStatus();
+                setInterval(() => this.checkApiStatus(), 30000);
+                this.loadPermissions();
+                this.loadRoles();
+                this.setupPermissionFilters();
+                console.log('🛡️ RBAC Test Module Initialized');
+            },
+            setupPermissionFilters: function () {
+                var self = this;
+                document.querySelectorAll('.filter-btn').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        document.querySelectorAll('.filter-btn').forEach(function (b) { b.classList.remove('active'); });
+                        this.classList.add('active');
+                        self.currentFilter = this.dataset.filter;
+                        self.filterPermissions();
+                    });
+                });
+            },
+            togglePermissionFilter: function () {
+                var filterBar = document.getElementById('permission-filters');
+                filterBar.style.display = filterBar.style.display === 'none' ? 'flex' : 'none';
+            },
+            filterPermissions: function () {
+                var searchTerm = document.getElementById('permission-search').value.toLowerCase();
+                var self = this;
+                this.filteredPermissions = this.allPermissions.filter(function (p) {
+                    var matchesSearch = p.code.toLowerCase().includes(searchTerm) || (p.name && p.name.toLowerCase().includes(searchTerm));
+                    var matchesFilter = self.currentFilter === 'all' || (p.moduleName && p.moduleName.toLowerCase() === self.currentFilter) || (p.resource && p.resource.toLowerCase() === self.currentFilter);
+                    return matchesSearch && matchesFilter;
+                });
+                this.renderPermissionsList();
+            },
+            renderPermissionsList: function () {
+                var list = document.getElementById('permissions-list');
+                var count = document.getElementById('permission-count');
+                var stats = document.getElementById('stat-permissions');
+                if (this.filteredPermissions.length === 0) {
+                    list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-text">No permissions found</div></div>';
+                } else {
+                    list.innerHTML = this.filteredPermissions.map(function (p) {
+                        return '<div class="permission-item"><div><div class="perm-code">' + p.code + '</div><div class="perm-details">' + (p.moduleName || p.resource || 'global') + ' • ' + (p.httpMethod || 'ANY') + ' ' + (p.routePath || '/') + '</div></div><div class="badge ' + (p.isSystem ? 'badge-system' : 'badge-success') + '">' + (p.isSystem ? '🔒 System' : '✅ Custom') + '</div></div>';
+                    }).join('');
+                }
+                count.textContent = this.filteredPermissions.length + ' permissions loaded';
+                stats.textContent = this.allPermissions.length;
+            },
+            loadRolesForSelector: function () {
+                var self = this;
+                this.apiCall('/roles').then(function (result) {
+                    if (result.success) {
+                        const roles = Array.isArray(result.data) ? result.data : (result.data.data || []);
+                        const select = document.getElementById('assign-role-select');
+                        select.innerHTML = '<option value="">Select Role...</option>' + roles.map(function (r) {
+                            return '<option value="' + r.id + '">' + r.name + ' (' + r.type + ')</option>';
+                        }).join('');
+                    }
+                });
+            },
+            searchUser: function() {
+    var email = document.getElementById('user-search-input').value.trim();
+    if (!email) {
+        this.log('❌ Please enter user email', 'error');
+        return;
+    }
+    var self = this;
+    this.apiCall('/users/by-email?email=' + encodeURIComponent(email)).then(function(result) {
+        if(result.success) {
+            // ✅ Handle both single object and nested responses
+            var user = result.data;
+            
+            // Check if response is nested (e.g., { data: {...} })
+            if (result.data && result.data.data) {
+                user = result.data.data;
+            }
+            
+            if(!user || !user.id) {
+                self.log('❌ No user found with email: ' + email, 'error');
+                document.getElementById('user-search-result').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('selected-user-id').value = user.id;
+            document.getElementById('user-display-name').textContent = (user.firstName || '') + ' ' + (user.lastName || '');
+            document.getElementById('user-display-email').textContent = user.email;
+            document.getElementById('user-avatar').textContent = (user.firstName || 'U')[0].toUpperCase();
+            
+            // Display current roles
+            var rolesHtml = '';
+            if(user.roles && user.roles.length > 0) {
+                rolesHtml = user.roles.map(function(r) {
+                    return '<div class="role-tag">' + r.name + 
+                        '<button onclick="RBACTest.removeRoleFromUser(\'' + user.id + '\',\'' + r.id + '\')" title="Remove role">✕</button>' +
+                    '</div>';
+                }).join('');
+            } else {
+                rolesHtml = '<span style="font-size:11px;color:var(--text-secondary);">No roles assigned</span>';
+            }
+            document.getElementById('user-current-roles').innerHTML = rolesHtml;
+            
+            document.getElementById('user-search-result').style.display = 'block';
+            self.log('✅ User found: ' + user.email, 'success');
+            document.getElementById('stat-users').textContent = '1';
+        } else {
+            self.log('❌ Failed to search user: ' + (result.data?.message?.message || result.data?.message || result.error || 'Unknown error'), 'error');
+            document.getElementById('user-search-result').style.display = 'none';
+        }
+    });
+},
+            removeRoleFromUser: function (userId, roleId) {
+                if (!confirm('Remove this role from user?')) return;
+                var self = this;
+                this.apiCall('/users/' + userId + '/roles', {
+                    method: 'PATCH',
+                    body: JSON.stringify({ roleIds: [] })
+                }).then(function (result) {
+                    if (result.success) {
+                        self.log('✅ Role removed from user', 'success');
+                        self.searchUser();
+                    }
+                });
+            },
+            assignRoleToUser: function () {
+                const userId = document.getElementById('selected-user-id').value;
+                const roleId = document.getElementById('assign-role-select').value;
+                if (!userId) {
+                    this.log('❌ Please search and select a user first', 'error');
+                    return;
+                }
+                if (!roleId) {
+                    this.log('❌ Please select a role', 'error');
+                    return;
+                }
+                var self = this;
+                this.apiCall('/users/' + userId + '/roles', {
+                    method: 'PATCH',
+                    body: JSON.stringify({ roleIds: [roleId] })
+                }).then(function (result) {
+                    const responseDiv = document.getElementById('assign-response');
+                    const resultPre = document.getElementById('assign-result');
+                    const statusBadge = document.getElementById('assign-status');
+                    responseDiv.style.display = 'block';
+                    resultPre.textContent = JSON.stringify(result.data, null, 2);
+                    statusBadge.textContent = result.status + ' ' + (result.success ? 'Success' : 'Error');
+                    statusBadge.className = 'badge ' + (result.success ? 'badge-success' : '');
+                    if (result.success) {
+                        self.log('✅ Role assigned successfully! User must re-login for changes to apply.', 'success');
+                        self.searchUser();
+                    } else {
+                        self.log('❌ Failed to assign role', 'error');
+                    }
+                });
+            },
+            saveToken: function () {
+                const tokenInput = document.getElementById('manual-token');
+                const token = tokenInput.value.trim();
+                if (!token) {
+                    this.log('❌ Please enter a token', 'error');
+                    this.updateTokenStatus(false);
+                    return;
+                }
+                this.accessToken = token;
+                localStorage.setItem('access-token', token);
+                this.updateTokenStatus(true);
+                this.log('✅ Token saved successfully', 'success');
+                this.loadPermissions();
+                this.loadRoles();
+                this.loadRolesForSelector();
+            },
+            clearToken: function () {
+                document.getElementById('manual-token').value = '';
+                this.accessToken = '';
+                localStorage.removeItem('access-token');
+                this.updateTokenStatus(false);
+                this.log('🗑️ Token cleared', 'warning');
+                document.getElementById('permissions-list').innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔒</div><div class="empty-state-text">No token - Please login or paste token</div></div>';
+                document.getElementById('roles-list').innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔒</div><div class="empty-state-text">No token - Please login or paste token</div></div>';
+            },
+            updateTokenStatus: function (isValid) {
+                const statusEl = document.getElementById('token-status');
+                if (isValid && this.accessToken) {
+                    statusEl.textContent = '✓ Token Active';
+                    statusEl.className = 'token-status valid';
+                } else {
+                    statusEl.textContent = '✗ No Token';
+                    statusEl.className = 'token-status invalid';
+                }
+            },
+            log: function (message, type, details) {
+                type = type || 'info';
+                var logger = document.getElementById('logger');
+                var timestamp = new Date().toLocaleTimeString();
+                var entry = document.createElement('div');
+                entry.className = 'log-entry log-' + type;
+                var methodMatch = message.match(/(GET|POST|PUT|DELETE|PATCH)/);
+                var methodHtml = '';
+                if (methodMatch) {
+                    var method = methodMatch[1].toLowerCase();
+                    methodHtml = '<span class="log-method log-' + method + '">' + methodMatch[1] + '</span> ';
+                }
+                var html = '<span class="log-timestamp">[' + timestamp + ']</span> ' + methodHtml + message;
+                if (details) { html += '<div class="log-details" style="color:var(--text-secondary);font-size:11px;margin-top:4px;">' + details + '</div>'; }
+                entry.innerHTML = html;
+                logger.appendChild(entry);
+                logger.scrollTop = logger.scrollHeight;
+            },
+            clearLogs: function () {
+                document.getElementById('logger').innerHTML = '<div class="log-entry log-info"><span class="log-timestamp">[SYSTEM]</span> Logger cleared.</div>';
+            },
+            copyLogs: function () {
+                var logger = document.getElementById('logger');
+                navigator.clipboard.writeText(logger.innerText);
+                this.log('✅ Logs copied to clipboard', 'success');
+            },
+            apiCall: function (endpoint, options) {
+                options = options || {};
+                var url = this.API_BASE + endpoint;
+                var method = options.method || 'GET';
+                var requestDetails = 'URL: ' + url + '\nMethod: ' + method + '\n';
+                var headers = { 'Content-Type': 'application/json' };
+                if (this.accessToken) {
+                    headers['Authorization'] = 'Bearer ' + this.accessToken;
+                    requestDetails += 'Auth: Bearer ***\n';
+                }
+                if (options.headers) Object.assign(headers, options.headers);
+                if (options.body) requestDetails += 'Body: ' + options.body.substring(0, 200) + '...';
+                this.log('→ ' + method + ' ' + endpoint, 'info', requestDetails);
+                return fetch(url, {
+                    method: method,
+                    headers: headers,
+                    body: options.body
+                }).then(function (response) {
+                    return response.json().then(function (data) {
+                        var statusType = response.ok ? 'success' : 'error';
+                        var responseDetails = 'Status: ' + response.status + '\nResponse: ' + JSON.stringify(data, null, 2).substring(0, 500);
+                        RBACTest.log('← ' + response.status + ' ' + (response.ok ? '✅ OK' : '❌ ERROR'), statusType, responseDetails);
+                        return { success: response.ok, data: data, status: response.status };
+                    });
+                }).catch(function (error) {
+                    RBACTest.log('← ❌ Network Error: ' + error.message, 'error');
+                    return { success: false, error: error.message };
+                });
+            },
+            loadPermissions: function () {
+                if (!this.accessToken) {
+                    this.log('⚠️ No Access Token found. Please paste token above or login in Auth Tests first.', 'warning');
+                    document.getElementById('permissions-list').innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔒</div><div class="empty-state-text">Authentication Required<br/><br/>Please paste your JWT token or login via Auth Tests page.</div></div>';
+                    return;
+                }
+                var self = this;
+                this.apiCall('/permissions').then(function (result) {
+                    if (!result.success) {
+                        document.getElementById('permissions-list').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><div class="empty-state-text">Failed to load permissions<br/>Status: ' + result.status + '</div></div>';
+                        return;
+                    }
+                    const perms = Array.isArray(result.data) ? result.data : (result.data.data || []);
+                    self.allPermissions = perms;
+                    self.filteredPermissions = perms;
+                    self.renderPermissionsList();
+                    var selector = document.getElementById('permission-selector');
+                    selector.innerHTML = perms.map(function (p) {
+                        return '<label class="checkbox-label"><input type="checkbox" value="' + p.code + '" onchange="RBACTest.togglePermission(\'' + p.code + '\')"><span>' + p.code + '</span></label>';
+                    }).join('');
+                    self.log('✅ Loaded ' + perms.length + ' permissions', 'success');
+                });
+            },
+            loadRoles: function () {
+                if (!this.accessToken) {
+                    document.getElementById('roles-list').innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔒</div><div class="empty-state-text">Authentication Required</div></div>';
+                    return;
+                }
+                var self = this;
+                this.apiCall('/roles').then(function (result) {
+                    if (!result.success) {
+                        document.getElementById('roles-list').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><div class="empty-state-text">Failed to load roles<br/>Status: ' + result.status + '</div></div>';
+                        return;
+                    }
+                    const roles = Array.isArray(result.data) ? result.data : (result.data.data || []);
+                    self.allRoles = roles;
+                    document.getElementById('roles-list').innerHTML = roles.map(function (r) {
+                        const permCount = r.permissions ? r.permissions.length : 0;
+                        const deleteBtn = !r.isSystem ? '<button class="btn btn-sm danger" onclick="RBACTest.deleteRole(\'' + r.id + '\')">Delete</button>' : '';
+                        const roleBadge = r.isSystem ? '<span class="role-badge role-badge-system">🔒 System</span>' : '<span class="role-badge role-badge-custom">✅ Custom</span>';
+                        return '<div class="role-item"><div><div style="font-weight:bold; color:#fff;">' + r.name + ' ' + roleBadge + '</div><div class="perm-details">' + permCount + ' permissions • ' + r.type + '</div></div><div style="display:flex; gap:8px;"><button class="btn btn-sm" onclick="RBACTest.editRole(\'' + r.id + '\')">Edit</button>' + deleteBtn + '</div></div>';
+                    }).join('');
+                    document.getElementById('role-count').textContent = roles.length + ' roles loaded';
+                    document.getElementById('stat-roles').textContent = roles.length;
+                    self.log('✅ Loaded ' + roles.length + ' roles', 'success');
+                    self.loadRolesForSelector();
+                });
+            },
+            togglePermission: function (code) {
+                if (this.selectedPermissions.has(code)) {
+                    this.selectedPermissions.delete(code);
+                } else {
+                    this.selectedPermissions.add(code);
+                }
+                var checkboxes = document.querySelectorAll('#permission-selector input[type="checkbox"]');
+                checkboxes.forEach(function (cb) {
+                    if (cb.value === code) {
+                        cb.parentElement.classList.toggle('selected', cb.checked);
+                    }
+                });
+                document.getElementById('selected-perm-count').textContent = this.selectedPermissions.size;
+            },
+            saveRole: function () {
+                const nameEl = document.getElementById('role-name');
+                const descEl = document.getElementById('role-desc');
+                const idEl = document.getElementById('edit-role-id');
+                if (!nameEl || !descEl) {
+                    this.log('❌ Form elements not found', 'error');
+                    return;
+                }
+                const name = nameEl.value;
+                const desc = descEl.value;
+                const id = idEl ? idEl.value : '';
+                const codes = Array.from(this.selectedPermissions);
+                if (!name) {
+                    this.log('❌ Role name is required', 'error');
+                    return;
+                }
+                const payload = { name: name, description: desc, permissionCodes: codes };
+                const endpoint = id ? '/roles/' + id : '/roles';
+                const method = id ? 'PUT' : 'POST';
+                var self = this;
+                this.apiCall(endpoint, {
+                    method: method,
+                    body: JSON.stringify(payload)
+                }).then(function (result) {
+                    const responseDiv = document.getElementById('role-response');
+                    const resultPre = document.getElementById('role-result');
+                    const statusBadge = document.getElementById('role-status');
+                    responseDiv.style.display = 'block';
+                    resultPre.textContent = JSON.stringify(result.data, null, 2);
+                    statusBadge.textContent = result.status + ' ' + (result.success ? 'Success' : 'Error');
+                    statusBadge.className = 'badge ' + (result.success ? 'badge-success' : '');
+                    if (result.success) {
+                        self.log('✅ Role ' + (id ? 'updated' : 'created') + ' successfully', 'success');
+                        self.resetRoleForm();
+                        self.loadRoles();
+                    } else {
+                        self.log('❌ Failed to save role', 'error');
+                    }
+                });
+            },
+            editRole: function (id) {
+                var self = this;
+                this.apiCall('/roles/' + id).then(function (result) {
+                    if (result.success) {
+                        const role = result.data.data || result.data;
+                        document.getElementById('edit-role-id').value = role.id;
+                        document.getElementById('role-name').value = role.name;
+                        document.getElementById('role-desc').value = role.description || '';
+                        document.getElementById('role-form-title').textContent = '✏️ Edit Role: ' + role.name;
+                        document.getElementById('save-role-btn').textContent = 'Update Role';
+                        document.getElementById('cancel-edit-btn').style.display = 'inline-block';
+                        self.selectedPermissions.clear();
+                        const checkboxes = document.querySelectorAll('#permission-selector input[type="checkbox"]');
+                        checkboxes.forEach(function (cb) {
+                            const hasPerm = role.permissions && role.permissions.some(function (p) { return p.code === cb.value; });
+                            cb.checked = hasPerm;
+                            cb.parentElement.classList.toggle('selected', hasPerm);
+                            if (hasPerm) self.selectedPermissions.add(cb.value);
+                        });
+                        document.getElementById('selected-perm-count').textContent = self.selectedPermissions.size;
+                        self.isEditing = true;
+                        self.log('📝 Editing role: ' + role.name, 'info');
+                    }
+                });
+            },
+            deleteRole: function (id) {
+                if (!confirm('Are you sure you want to delete this role? This cannot be undone.')) return;
+                var self = this;
+                this.apiCall('/roles/' + id, { method: 'DELETE' }).then(function (result) {
+                    if (result.success) {
+                        self.log('🗑️ Role deleted', 'success');
+                        self.loadRoles();
+                    } else {
+                        self.log('❌ Failed to delete role', 'error');
+                    }
+                });
+            },
+            resetRoleForm: function () {
+                document.getElementById('edit-role-id').value = '';
+                document.getElementById('role-name').value = '';
+                document.getElementById('role-desc').value = '';
+                document.getElementById('role-form-title').textContent = '➕ Create New Role';
+                document.getElementById('save-role-btn').textContent = 'Create Role';
+                document.getElementById('cancel-edit-btn').style.display = 'none';
+                this.selectedPermissions.clear();
+                const checkboxes = document.querySelectorAll('#permission-selector input[type="checkbox"]');
+                checkboxes.forEach(function (cb) {
+                    cb.checked = false;
+                    cb.parentElement.classList.remove('selected');
+                });
+                document.getElementById('selected-perm-count').textContent = '0';
+                this.isEditing = false;
+                document.getElementById('role-response').style.display = 'none';
+            },
+            openSwagger: function () {
+                window.open(this.API_BASE.replace('/api/v1', '/api/docs'), '_blank');
+            },
+            clearAllData: function () {
+                localStorage.clear();
+                this.accessToken = '';
+                document.getElementById('manual-token').value = '';
+                this.updateTokenStatus(false);
+                this.log('🗑️ All local data cleared', 'warning');
+                location.reload();
+            },
+            setEndpoint: function (endpoint) {
+                this.API_BASE = endpoint;
+                localStorage.setItem('api-endpoint', endpoint);
+                document.getElementById('api-endpoint').textContent = endpoint;
+                this.log('🌐 API endpoint changed to: ' + endpoint, 'info');
+                this.checkApiStatus();
+                this.loadPermissions();
+                this.loadRoles();
+            },
+            checkApiStatus: function () {
+                var self = this;
+                fetch(this.API_BASE + '/health').then(function (response) {
+                    var badge = document.getElementById('api-status-badge');
+                    var text = document.getElementById('api-status-text');
+                    if (response.ok) {
+                        badge.className = 'status-badge status-online';
+                        text.textContent = 'Connected';
+                    } else {
+                        throw new Error('Not OK');
+                    }
+                }).catch(function () {
+                    var badge = document.getElementById('api-status-badge');
+                    var text = document.getElementById('api-status-text');
+                    badge.className = 'status-badge status-offline';
+                    text.textContent = 'Disconnected';
+                });
+            }
+        };
+        document.addEventListener('DOMContentLoaded', function () {
+            RBACTest.init();
+        });
+    </script>
+</body>
+
+</html>

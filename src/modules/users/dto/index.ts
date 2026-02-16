@@ -4,3 +4,4 @@ export * from './update-profile.dto';
 export * from './change-password.dto';
 export * from './user-response.dto';
 export * from './user-query.dto';
+export * from './find-by-email.dto';

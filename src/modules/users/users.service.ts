@@ -32,20 +32,9 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-  ) {}
+  ) { }
 
-  async findByEmail(email: string, withPassword = false): Promise<User | null> {
-    const query = this.userRepository.createQueryBuilder('user')
-      .leftJoinAndSelect('user.roles', 'roles')
-      .leftJoinAndSelect('roles.permissions', 'permissions')
-      .where('user.email = :email', { email });
 
-    if (withPassword) {
-      query.addSelect('user.password');
-    }
-
-    return query.getOne();
-  }
 
   async findById(id: string): Promise<User | null> {
     return this.userRepository.findOne({
@@ -75,7 +64,38 @@ export class UsersService {
     }
     return user;
   }
+  async findByIdWithRolesAndPermissions(id: string): Promise<User> {
+    const user = await this.userRepository.findOne({
+      where: { id },
+      relations: {
+        roles: {
+          permissions: true,
+        },
+      },
+    });
 
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    return user;
+  }
+
+  // Also update findByEmail if used in validateUser
+  async findByEmail(email: string, includeRoles = false): Promise<User | null> {
+    if (includeRoles) {
+      return this.userRepository.findOne({
+        where: { email },
+        relations: {
+          roles: {
+            permissions: true, // ✅ Load permissions with roles
+          },
+        },
+      });
+    }
+
+    return this.userRepository.findOne({ where: { email } });
+  }
   async findAll(query: UserQueryDto): Promise<PaginatedUsers> {
     // Fix: Provide default values
     const page = query.page ?? 1;
@@ -237,7 +257,7 @@ export class UsersService {
 
   async deleteUser(id: string): Promise<void> {
     const user = await this.findByIdWithRoles(id);
-    
+
     // Prevent deleting the last admin (optional business logic)
     const isAdmin = user.roles.some(role => role.name === 'admin');
     if (isAdmin) {
@@ -246,7 +266,7 @@ export class UsersService {
         .leftJoin('user.roles', 'role')
         .where('role.name = :roleName', { roleName: 'admin' })
         .getCount();
-      
+
       if (adminCount <= 1) {
         throw new ForbiddenException('Cannot delete the last admin user');
       }
