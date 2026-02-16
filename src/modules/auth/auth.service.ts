@@ -23,6 +23,7 @@ import {
   TokenPayload,
 } from './dto';
 import { User } from '../users/entities/user.entity';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class AuthService {
@@ -35,6 +36,8 @@ export class AuthService {
     private readonly sessionsService: SessionsService,
     private readonly auditService: AuditService,
     private readonly authRepository: AuthRepository,
+        private readonly emailService: EmailService, 
+
   ) {}
 
   async register(dto: RegisterDto, ip?: string, userAgent?: string): Promise<TokenResponseDto> {
@@ -54,6 +57,27 @@ export class AuthService {
       emailVerified: false,
     });
 
+    // Generate verification token
+    const verificationToken = this.jwtService.sign(
+      { 
+        sub: user.id, 
+        email: user.email, 
+        type: 'email-verification' 
+      },
+      {
+        secret: this.configService.get('jwt.access.secret'),
+        expiresIn: '24h',
+      }
+    );
+
+    // CAPTURE EMAIL (ADD THIS BLOCK)
+    try {
+      await this.emailService.sendVerificationEmail(user.email, verificationToken);
+      this.logger.log(`📧 Verification email captured for ${user.email}`);
+    } catch (error) {
+      this.logger.error('Failed to capture email:', error);
+    }
+
     // Generate tokens
     const tokens = await this.generateTokenPair(user);
 
@@ -71,15 +95,53 @@ export class AuthService {
       userId: user.id,
       action: 'USER_REGISTERED',
       resource: 'auth',
-      details: { email: dto.email },
+      details: { 
+        email: dto.email,
+        verificationEmailCaptured: true 
+      },
       ipAddress: ip,
       userAgent,
     });
 
     this.logger.log(`User registered: ${user.email}`);
-    return tokens;
+    
+    // Return with helpful message
+    return {
+      ...tokens,
+      message: 'Registration successful! Check the email capture interface to verify your email.',
+    } as any;
   }
+async verifyEmail(token: string): Promise<{ success: boolean; message: string }> {
+  try {
+    const payload = this.jwtService.verify(token, {
+      secret: this.configService.get('jwt.access.secret'),
+    });
 
+    if (payload.type !== 'email-verification') {
+      throw new UnauthorizedException('Invalid token type');
+    }
+
+    const user = await this.usersService.findById(payload.sub);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    if (user.emailVerified) {
+      return { success: true, message: 'Email already verified' };
+    }
+
+    await this.usersService.update(user.id, { emailVerified: true });
+
+    this.logger.log(`Email verified: ${user.email}`);
+
+    return { 
+      success: true, 
+      message: 'Email verified successfully! You can now log in.' 
+    };
+  } catch (error) {
+    throw new UnauthorizedException('Invalid or expired verification token');
+  }
+}
   async login(dto: LoginDto, ip?: string, userAgent?: string): Promise<TokenResponseDto> {
     const user = await this.validateUser(dto.email, dto.password);
     

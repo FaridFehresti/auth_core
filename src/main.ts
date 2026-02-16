@@ -4,6 +4,8 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import compression from 'compression';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
@@ -12,7 +14,8 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   
-  const app = await NestFactory.create(AppModule, {
+  // Change to NestExpressApplication
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: ['error', 'warn', 'log', 'debug', 'verbose'],
     bufferLogs: true,
   });
@@ -21,11 +24,14 @@ async function bootstrap() {
   const port = configService.get<number>('app.port', 3000);
   const env = configService.get<string>('app.env', 'development');
 
+  // Serve static files from public folder
+  app.useStaticAssets(join(__dirname, '..', 'public'));
+
   app.use(helmet());
   app.use(compression());
   
   app.enableCors({
-    origin: configService.get('app.corsOrigins', '*'),
+    origin: configService.get('corsOrigins', '*'),
     credentials: true,
   });
 
@@ -62,6 +68,8 @@ async function bootstrap() {
 
   await app.listen(port);
   logger.log(`🚀 Core Auth Service running on port ${port}`);
+  logger.log(`🧪 Test Interface: http://localhost:${port}/index.html`);
+  logger.log(`📚 Swagger Docs: http://localhost:${port}/api/docs`);
 }
 
 bootstrap();

@@ -8,7 +8,7 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-  ) {}
+  ) { }
 
   async findByEmail(email: string, withPassword = false): Promise<User | null> {
     const query = this.userRepository.createQueryBuilder('user')
@@ -41,5 +41,13 @@ export class UsersService {
 
   async incrementFailedAttempts(id: string): Promise<void> {
     await this.userRepository.increment({ id }, 'failedLoginAttempts', 1);
+  }
+  async update(id: string, data: Partial<User>): Promise<User> {
+    await this.userRepository.update(id, data);
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new Error('User not found after update');
+    }
+    return user;
   }
 }

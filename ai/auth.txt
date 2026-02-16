@@ -1,0 +1,242 @@
+write me an index.html file that lets me test everything i have built so far  , very descriptively :
+I'll show you the complete codebase structure and how to test everything. Let me organize this properly.
+Complete Project Structure
+plain
+Copy
+life-os/
+├── src/
+│   ├── main.ts
+│   ├── app.module.ts
+│   ├── config/
+│   │   ├── app.config.ts
+│   │   ├── database.config.ts
+│   │   ├── jwt.config.ts
+│   │   ├── redis.config.ts
+│   │   └── validation.schema.ts
+│   ├── common/
+│   │   ├── decorators/
+│   │   │   ├── current-user.decorator.ts
+│   │   │   ├── public.decorator.ts
+│   │   │   ├── require-permissions.decorator.ts
+│   │   │   └── tenant.decorator.ts
+│   │   ├── filters/
+│   │   │   └── all-exceptions.filter.ts
+│   │   ├── guards/
+│   │   │   └── (empty - guards are in auth module)
+│   │   ├── interceptors/
+│   │   │   ├── logging.interceptor.ts
+│   │   │   └── response.interceptor.ts
+│   │   └── utils/
+│   ├── modules/
+│   │   ├── auth/
+│   │   │   ├── auth.module.ts
+│   │   │   ├── auth.controller.ts
+│   │   │   ├── auth.service.ts
+│   │   │   ├── auth.repository.ts
+│   │   │   ├── dto/
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── login.dto.ts
+│   │   │   │   ├── register.dto.ts
+│   │   │   │   ├── refresh-token.dto.ts
+│   │   │   │   ├── token-payload.dto.ts
+│   │   │   │   └── token-response.dto.ts
+│   │   │   ├── entities/
+│   │   │   │   └── (uses user entity from users module)
+│   │   │   ├── strategies/
+│   │   │   │   ├── jwt.strategy.ts
+│   │   │   │   ├── refresh.strategy.ts
+│   │   │   │   └── api-key.strategy.ts
+│   │   │   ├── guards/
+│   │   │   │   ├── jwt-auth.guard.ts
+│   │   │   │   ├── permissions.guard.ts
+│   │   │   │   └── api-key-auth.guard.ts
+│   │   │   └── decorators/
+│   │   │       └── current-user.decorator.ts
+│   │   ├── users/
+│   │   │   ├── users.module.ts
+│   │   │   ├── users.service.ts
+│   │   │   ├── users.controller.ts
+│   │   │   └── entities/
+│   │   │       └── user.entity.ts
+│   │   ├── roles/
+│   │   │   ├── roles.module.ts
+│   │   │   └── entities/
+│   │   │       └── role.entity.ts
+│   │   ├── permissions/
+│   │   │   ├── permissions.module.ts
+│   │   │   └── entities/
+│   │   │       └── permission.entity.ts
+│   │   ├── sessions/
+│   │   │   ├── sessions.module.ts
+│   │   │   ├── sessions.service.ts
+│   │   │   └── entities/
+│   │   │       └── session.entity.ts
+│   │   ├── audit/
+│   │   │   ├── audit.module.ts
+│   │   │   └── audit.service.ts
+│   │   └── health/
+│   │       ├── health.module.ts
+│   │       └── health.controller.ts
+│   ├── shared/
+│   │   ├── events/
+│   │   │   ├── events.module.ts
+│   │   │   └── events.service.ts
+│   │   └── auth-sdk/
+│   │       ├── auth-client.module.ts
+│   │       ├── auth-client.service.ts
+│   │       ├── constants.ts
+│   │       └── interfaces.ts
+│   └── database/
+│       └── (migrations folder)
+├── .env
+├── docker-compose.yml
+└── package.json
+Key Features Implemented
+Table
+Copy
+Feature	Status	Description
+JWT Authentication	✅	Access & Refresh tokens
+Password Hashing	✅	bcrypt with salt rounds
+User Management	✅	CRUD operations
+RBAC (Roles)	✅	Role-based access control structure
+Permissions	✅	Fine-grained permissions
+Session Management	✅	Redis-based session tracking
+Rate Limiting	✅	Throttler module
+API Key Auth	✅	Service-to-service authentication
+Audit Logging	✅	Action logging structure
+Health Checks	✅	Terminus health endpoints
+Swagger Docs	✅	Auto-generated API documentation
+Input Validation	✅	class-validator
+Error Handling	✅	Global exception filter
+Security Headers	✅	Helmet middleware
+Compression	✅	gzip compression
+Testing Guide
+1. Start the Application
+powershell
+Copy
+# Make sure PostgreSQL is running and database "core_auth" exists
+# Make sure Redis is running (or use Docker)
+
+# Start the app
+npm run start:dev
+You should see:
+plain
+Copy
+🚀 Core Auth Service running on port 3000 [development]
+📚 Swagger documentation: http://localhost:3000/api/docs
+2. Access Swagger UI
+Open browser: http://localhost:3000/api/docs
+You'll see all available endpoints with interactive testing.
+3. Test Authentication Flow
+Step 1: Register a User
+POST http://localhost:3000/api/v1/auth/register
+Request body:
+JSON
+Copy
+{
+  "email": "test@example.com",
+  "password": "password123",
+  "firstName": "John",
+  "lastName": "Doe"
+}
+Expected response:
+JSON
+Copy
+{
+  "data": {
+    "access_token": "eyJhbGciOiJIUzI1NiIs...",
+    "user": {
+      "id": "uuid-here",
+      "email": "test@example.com",
+      "firstName": "John",
+      "lastName": "Doe"
+    }
+  },
+  "statusCode": 201,
+  "message": "Success"
+}
+Step 2: Login
+POST http://localhost:3000/api/v1/auth/login
+Request body:
+JSON
+Copy
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+Step 3: Access Protected Route (Example)
+GET http://localhost:3000/api/v1/users/profile
+Headers:
+plain
+Copy
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+4. Test with cURL
+bash
+Copy
+# Register
+curl -X POST http://localhost:3000/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"password123","firstName":"John","lastName":"Doe"}'
+
+# Login
+curl -X POST http://localhost:3000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"password123"}'
+
+# Use token to access protected route
+curl http://localhost:3000/api/v1/health \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE"
+5. Test with PowerShell
+powershell
+Copy
+# Register
+Invoke-RestMethod -Uri "http://localhost:3000/api/v1/auth/register" -Method Post -ContentType "application/json" -Body '{"email":"test@example.com","password":"password123","firstName":"John","lastName":"Doe"}'
+
+# Login
+$response = Invoke-RestMethod -Uri "http://localhost:3000/api/v1/auth/login" -Method Post -ContentType "application/json" -Body '{"email":"test@example.com","password":"password123"}'
+$token = $response.data.access_token
+
+# Use token
+Invoke-RestMethod -Uri "http://localhost:3000/api/v1/health" -Headers @{"Authorization"="Bearer $token"}
+6. Available Endpoints
+Table
+Copy
+Method	Endpoint	Description	Auth Required
+POST	/api/v1/auth/register	Register new user	No
+POST	/api/v1/auth/login	Login user	No
+POST	/api/v1/auth/refresh	Refresh access token	No
+GET	/api/v1/health	Health check	No
+GET	/api/v1/users	List users	Yes (Admin)
+GET	/api/v1/users/:id	Get user by ID	Yes
+7. Database Verification
+In pgAdmin or psql:
+sql
+Copy
+-- Check created tables
+SELECT * FROM information_schema.tables WHERE table_schema = 'public';
+
+-- Check users
+SELECT * FROM users;
+
+-- Check sessions
+SELECT * FROM sessions;
+8. Redis Verification (if running)
+powershell
+Copy
+# Connect to Redis CLI
+docker exec -it redis redis-cli
+
+# Check keys
+KEYS *
+
+# Check session
+GET "session:user-id:session-id"
+Next Steps to Expand
+Add Roles & Permissions endpoints
+Implement email verification
+Add password reset flow
+Create more CRUD endpoints for users
+Add OAuth2/Social login
+Implement MFA/2FA
+Add API versioning
+Create microservices communication

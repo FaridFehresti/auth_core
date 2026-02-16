@@ -18,6 +18,7 @@ import { SessionsModule } from './modules/sessions/sessions.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { HealthModule } from './modules/health/health.module';
 import { EventsModule } from './shared/events/events.module';
+import { EmailModule } from './modules/email/email.module';
 
 @Module({
   imports: [
@@ -59,7 +60,7 @@ import { EventsModule } from './shared/events/events.module';
       }),
       inject: [ConfigService],
     }),
-
+    EmailModule,
     AuthModule,
     UsersModule,
     RolesModule,

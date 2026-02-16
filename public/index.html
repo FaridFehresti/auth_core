@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 LifeOS Auth Test Interface</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-primary: #6366f1;
+            --accent-secondary: #8b5cf6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --info: #3b82f6;
+            --border: #475569;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .app-container {
+            display: grid;
+            grid-template-columns: 1fr 450px;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        @media (max-width: 1200px) {
+            .app-container { grid-template-columns: 1fr; }
+        }
+
+        /* Main Content Area */
+        .main-content {
+            overflow-y: auto;
+            padding: 24px;
+        }
+
+        .header {
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+        }
+
+        /* Connection Bar */
+        .connection-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg-secondary);
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border);
+        }
+
+        .connection-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .status-online {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .status-offline {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            border: 1px solid var(--error);
+        }
+
+        .pulse {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .endpoint-display {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            background: var(--bg-tertiary);
+            padding: 6px 12px;
+            border-radius: 6px;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .action-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            color: var(--text-primary);
+        }
+
+        .action-btn:hover {
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+        }
+
+        .action-btn h3 {
+            font-size: 0.875rem;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .action-btn p {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--bg-secondary);
+            padding: 4px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+
+        .tab.active {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .tab:hover:not(.active) {
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-header h2 {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            font-family: 'Fira Code', monospace;
+            transition: all 0.2s;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        input::placeholder {
+            color: var(--text-muted);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5558e3;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: #1f2937;
+        }
+
+        .btn-danger {
+            background: var(--error);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 0.75rem;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        /* Response Viewer */
+        .response-panel {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-top: 16px;
+            overflow: hidden;
+        }
+
+        .response-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .response-body {
+            padding: 16px;
+            max-height: 300px;
+            overflow: auto;
+        }
+
+        .response-body pre {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.75rem;
+            line-height: 1.6;
+            color: var(--text-primary);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .response-success { color: var(--success); }
+        .response-error { color: var(--error); }
+
+        /* Email Preview */
+        .email-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .email-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .email-header {
+            padding: 16px;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .email-subject {
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .email-meta {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .email-body {
+            padding: 16px;
+        }
+
+        .email-content {
+            background: white;
+            color: #333;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .token-box {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid var(--warning);
+            border-radius: 8px;
+            padding: 12px;
+            margin: 12px 0;
+        }
+
+        .token-box code {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.75rem;
+            word-break: break-all;
+            color: var(--warning);
+        }
+
+        /* Terminal / Logger Panel */
+        .terminal-panel {
+            background: #000;
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .terminal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .terminal-header h2 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .terminal-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .terminal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.8rem;
+            line-height: 1.7;
+        }
+
+        .log-entry {
+            margin-bottom: 12px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border-left: 3px solid transparent;
+        }
+
+        .log-entry:hover {
+            background: rgba(255,255,255,0.03);
+        }
+
+        .log-timestamp {
+            color: #6b7280;
+            font-size: 0.75rem;
+        }
+
+        .log-method {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            margin-right: 8px;
+            text-transform: uppercase;
+        }
+
+        .log-get { background: #10b981; color: #000; }
+        .log-post { background: #3b82f6; color: #fff; }
+        .log-put { background: #f59e0b; color: #000; }
+        .log-delete { background: #ef4444; color: #fff; }
+
+        .log-success { 
+            color: #10b981; 
+            border-left-color: #10b981;
+            background: rgba(16, 185, 129, 0.05);
+        }
+        .log-error { 
+            color: #ef4444; 
+            border-left-color: #ef4444;
+            background: rgba(239, 68, 68, 0.05);
+        }
+        .log-warning { 
+            color: #f59e0b; 
+            border-left-color: #f59e0b;
+            background: rgba(245, 158, 11, 0.05);
+        }
+        .log-info { 
+            color: #60a5fa; 
+            border-left-color: #60a5fa;
+            background: rgba(96, 165, 250, 0.05);
+        }
+
+        .log-details {
+            margin-top: 8px;
+            padding: 8px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+
+        .log-headers {
+            color: #9ca3af;
+            font-size: 0.7rem;
+            margin-top: 4px;
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+        }
+
+        .badge-success {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--border);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="header">
+                <h1>🚀 LifeOS Auth Test</h1>
+                <p>Enterprise Authentication Testing Interface</p>
+            </div>
+
+            <div class="connection-bar">
+                <div class="connection-info">
+                    <div class="status-badge status-online" id="api-status-badge">
+                        <span class="pulse"></span>
+                        <span id="api-status-text">Connected</span>
+                    </div>
+                    <div class="endpoint-display" id="api-endpoint">http://localhost:3000/api/v1</div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-secondary" onclick="setEndpoint('http://localhost:3000/api/v1')">Local</button>
+                    <button class="btn btn-sm btn-secondary" onclick="setEndpoint('http://localhost:3001/api/v1')">Docker</button>
+                </div>
+            </div>
+
+            <div class="quick-actions">
+                <div class="action-btn" onclick="fillRegister()">
+                    <h3>📝 Quick Register</h3>
+                    <p>Auto-fill with test data</p>
+                </div>
+                <div class="action-btn" onclick="checkEmailInbox()">
+                    <h3>📧 Email Inbox</h3>
+                    <p>View captured emails</p>
+                </div>
+                <div class="action-btn" onclick="openSwagger()">
+                    <h3>📚 Swagger Docs</h3>
+                    <p>API documentation</p>
+                </div>
+                <div class="action-btn" onclick="clearAllData()">
+                    <h3>🗑️ Clear Data</h3>
+                    <p>Reset local storage</p>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('auth', this)">🔐 Authentication</button>
+                <button class="tab" onclick="switchTab('email', this)">📧 Email Capture</button>
+                <button class="tab" onclick="switchTab('user', this)">👤 User Profile</button>
+            </div>
+
+            <!-- Auth Tab -->
+            <div id="tab-auth" class="tab-content active">
+                <div class="card">
+                    <div class="card-header">
+                        <span>📝</span>
+                        <h2>Register New User</h2>
+                    </div>
+                    <div class="card-body">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div class="form-group">
+                                <label>Email Address</label>
+                                <input type="email" id="reg-email" placeholder="user@example.com">
+                            </div>
+                            <div class="form-group">
+                                <label>Password</label>
+                                <input type="password" id="reg-password" placeholder="password123">
+                            </div>
+                            <div class="form-group">
+                                <label>First Name</label>
+                                <input type="text" id="reg-firstname" placeholder="John">
+                            </div>
+                            <div class="form-group">
+                                <label>Last Name</label>
+                                <input type="text" id="reg-lastname" placeholder="Doe">
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="register()" style="width: 100%; margin-top: 8px;">
+                            🚀 Register & Capture Email
+                        </button>
+                        <div id="register-response" class="response-panel" style="display: none;">
+                            <div class="response-header">
+                                <span>Response</span>
+                                <span class="badge" id="register-status">200 OK</span>
+                            </div>
+                            <div class="response-body">
+                                <pre id="register-result"></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span>🔑</span>
+                        <h2>Login</h2>
+                    </div>
+                    <div class="card-body">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" id="login-email" placeholder="user@example.com">
+                            </div>
+                            <div class="form-group">
+                                <label>Password</label>
+                                <input type="password" id="login-password" placeholder="password123">
+                            </div>
+                        </div>
+                        <button class="btn btn-success" onclick="login()" style="width: 100%; margin-top: 8px;">
+                            🔓 Login
+                        </button>
+                        <div id="login-response" class="response-panel" style="display: none;">
+                            <div class="response-header">
+                                <span>Response</span>
+                                <span class="badge" id="login-status">200 OK</span>
+                            </div>
+                            <div class="response-body">
+                                <pre id="login-result"></pre>
+                                <div id="token-display" style="margin-top: 12px; padding: 12px; background: rgba(99, 102, 241, 0.1); border-radius: 6px; word-break: break-all; font-size: 0.75rem; color: var(--accent-primary);"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span>✅</span>
+                        <h2>Verify Email</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Verification Token (from captured email)</label>
+                            <textarea id="verify-token" placeholder="Paste token here or click 'Use This Token' from email below"></textarea>
+                        </div>
+                        <button class="btn btn-warning" onclick="verifyEmail()" style="width: 100%;">
+                            ✅ Verify Email Address
+                        </button>
+                        <div id="verify-response" class="response-panel" style="display: none;">
+                            <div class="response-header">
+                                <span>Response</span>
+                                <span class="badge" id="verify-status">200 OK</span>
+                            </div>
+                            <div class="response-body">
+                                <pre id="verify-result"></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Email Tab -->
+            <div id="tab-email" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <span>📧</span>
+                        <h2>Email Capture Inbox</h2>
+                    </div>
+                    <div class="card-body">
+                        <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+                            <input type="email" id="check-email" placeholder="Enter email address to check..." style="flex: 1;">
+                            <button class="btn btn-primary" onclick="fetchEmails()">📥 Fetch</button>
+                            <button class="btn btn-danger" onclick="clearEmails()">🗑️ Clear</button>
+                        </div>
+                        <div id="email-list" class="email-list">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📭</div>
+                                <p>No emails captured yet. Register a user to see verification emails.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Tab -->
+            <div id="tab-user" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <span>👤</span>
+                        <h2>User Actions</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Access Token (auto-filled after login)</label>
+                            <textarea id="user-token" rows="3" placeholder="eyJhbGciOiJIUzI1NiIs..."></textarea>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+                            <button class="btn btn-primary" onclick="getProfile()">👤 Get Profile</button>
+                            <button class="btn btn-warning" onclick="refreshAccessToken()">🔄 Refresh Token</button>
+                            <button class="btn btn-danger" onclick="logout()">🚪 Logout</button>
+                        </div>
+                        <div id="user-response" class="response-panel" style="display: none; margin-top: 16px;">
+                            <div class="response-header">
+                                <span>Response</span>
+                                <span class="badge" id="user-status">200 OK</span>
+                            </div>
+                            <div class="response-body">
+                                <pre id="user-result"></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Terminal Panel -->
+        <div class="terminal-panel">
+            <div class="terminal-header">
+                <h2>📊 API Activity Log</h2>
+                <div class="terminal-actions">
+                    <button class="btn btn-sm btn-secondary" onclick="copyLogs()">📋 Copy</button>
+                    <button class="btn btn-sm btn-danger" onclick="clearLogs()">🗑️ Clear</button>
+                </div>
+            </div>
+            <div class="terminal-body" id="logger">
+                <div class="log-entry log-info">
+                    <span class="log-timestamp">[SYSTEM]</span> Logger initialized. Ready to test...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        window.API_BASE = localStorage.getItem('api-endpoint') || 'http://localhost:3000/api/v1';
+        window.accessToken = localStorage.getItem('access-token') || '';
+        window.refreshTokenValue = localStorage.getItem('refresh-token') || '';
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('api-endpoint').textContent = window.API_BASE;
+            if (window.accessToken) {
+                document.getElementById('user-token').value = window.accessToken;
+            }
+            checkApiStatus();
+            setInterval(checkApiStatus, 30000);
+        });
+
+        // Enhanced Logger
+        function log(message, type, details) {
+            type = type || 'info';
+            var logger = document.getElementById('logger');
+            var timestamp = new Date().toLocaleTimeString();
+            
+            var entry = document.createElement('div');
+            entry.className = 'log-entry log-' + type;
+            
+            var methodMatch = message.match(/(GET|POST|PUT|DELETE|PATCH)/);
+            var methodHtml = '';
+            if (methodMatch) {
+                var method = methodMatch[1].toLowerCase();
+                methodHtml = '<span class="log-method log-' + method + '">' + methodMatch[1] + '</span>';
+            }
+            
+            var html = '<span class="log-timestamp">[' + timestamp + ']</span> ' + methodHtml + message;
+            
+            if (details) {
+                html += '<div class="log-details">' + details + '</div>';
+            }
+            
+            entry.innerHTML = html;
+            logger.appendChild(entry);
+            logger.scrollTop = logger.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('logger').innerHTML = '<div class="log-entry log-info"><span class="log-timestamp">[SYSTEM]</span> Logger cleared.</div>';
+        }
+
+        function copyLogs() {
+            var logger = document.getElementById('logger');
+            var text = logger.innerText;
+            navigator.clipboard.writeText(text);
+            log('Logs copied to clipboard', 'success');
+        }
+
+        // API Call with detailed logging
+        function apiCall(endpoint, options) {
+            options = options || {};
+            var url = window.API_BASE + endpoint;
+            var method = options.method || 'GET';
+            
+            // Log request details
+            var requestDetails = 'URL: ' + url + '\n';
+            requestDetails += 'Method: ' + method + '\n';
+            
+            var headers = {
+                'Content-Type': 'application/json'
+            };
+            if (window.accessToken) {
+                headers['Authorization'] = 'Bearer ' + window.accessToken;
+            }
+            if (options.headers) {
+                Object.assign(headers, options.headers);
+            }
+            
+            requestDetails += 'Headers:\n';
+            for (var key in headers) {
+                requestDetails += '  ' + key + ': ' + (key === 'Authorization' ? 'Bearer ***' : headers[key]) + '\n';
+            }
+            
+            if (options.body) {
+                requestDetails += 'Body: ' + options.body.substring(0, 500) + (options.body.length > 500 ? '...' : '');
+            }
+            
+            log('→ ' + method + ' ' + endpoint, 'info', requestDetails);
+
+            return fetch(url, {
+                method: method,
+                headers: headers,
+                body: options.body
+            }).then(function(response) {
+                return response.json().then(function(data) {
+                    var statusType = response.ok ? 'success' : 'error';
+                    var responseDetails = 'Status: ' + response.status + ' ' + response.statusText + '\n';
+                    responseDetails += 'Response: ' + JSON.stringify(data, null, 2).substring(0, 1000);
+                    if (JSON.stringify(data).length > 1000) {
+                        responseDetails += '... (truncated)';
+                    }
+                    
+                    log('← ' + response.status + ' ' + (response.ok ? 'OK' : 'ERROR'), statusType, responseDetails);
+                    
+                    return { 
+                        success: response.ok, 
+                        data: data, 
+                        status: response.status,
+                        statusText: response.statusText
+                    };
+                });
+            }).catch(function(error) {
+                log('← Network Error: ' + error.message, 'error', error.stack);
+                return { success: false, error: error.message };
+            });
+        }
+
+        // Auth Functions
+        function register() {
+            var payload = {
+                email: document.getElementById('reg-email').value,
+                password: document.getElementById('reg-password').value,
+                firstName: document.getElementById('reg-firstname').value,
+                lastName: document.getElementById('reg-lastname').value
+            };
+
+            apiCall('/auth/register', {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            }).then(function(result) {
+                var responseDiv = document.getElementById('register-response');
+                var resultPre = document.getElementById('register-result');
+                var statusBadge = document.getElementById('register-status');
+                
+                responseDiv.style.display = 'block';
+                resultPre.textContent = JSON.stringify(result.data, null, 2);
+                statusBadge.textContent = result.status + ' ' + result.statusText;
+                statusBadge.className = 'badge ' + (result.success ? 'badge-success' : '');
+                
+                if (result.success) {
+                    document.getElementById('check-email').value = payload.email;
+                    document.getElementById('login-email').value = payload.email;
+                    document.getElementById('login-password').value = payload.password;
+                    
+                    log('✅ Registration successful! Check email capture for verification token.', 'success');
+                    
+                    setTimeout(function() {
+                        fetchEmails();
+                        switchTab('email', document.querySelectorAll('.tab')[1]);
+                    }, 1500);
+                }
+            });
+        }
+
+        function login() {
+    var payload = {
+        email: document.getElementById('login-email').value,
+        password: document.getElementById('login-password').value
+    };
+
+    apiCall('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+    }).then(function(result) {
+        var responseDiv = document.getElementById('login-response');
+        var resultPre = document.getElementById('login-result');
+        var tokenDisplay = document.getElementById('token-display');
+        var statusBadge = document.getElementById('login-status');
+        
+        responseDiv.style.display = 'block';
+        resultPre.textContent = JSON.stringify(result.data, null, 2);
+        statusBadge.textContent = result.status + ' ' + result.statusText;
+        statusBadge.className = 'badge ' + (result.success ? 'badge-success' : '');
+
+        // FIX: Check if login was successful by looking for access_token in the nested data
+        if (result.success && result.data && result.data.data && result.data.data.access_token) {
+            window.accessToken = result.data.data.access_token;
+            window.refreshTokenValue = result.data.data.refresh_token;
+            
+            localStorage.setItem('access-token', window.accessToken);
+            localStorage.setItem('refresh-token', window.refreshTokenValue);
+            
+            document.getElementById('user-token').value = window.accessToken;
+            tokenDisplay.textContent = '🔑 Access Token: ' + window.accessToken.substring(0, 60) + '...';
+            
+            log('✅ Login successful! Token saved to localStorage.', 'success');
+        } else if (!result.success) {
+            // Only show failure message if result.success is false
+            var errorMsg = result.data?.message || result.message || 'Unknown error';
+            log('❌ Login failed: ' + errorMsg, 'error');
+        }
+    });
+}
+        function verifyEmail() {
+            var token = document.getElementById('verify-token').value.trim();
+            if (!token) {
+                log('❌ Please enter verification token', 'error');
+                return;
+            }
+
+            apiCall('/auth/verify-email?token=' + encodeURIComponent(token)).then(function(result) {
+                var responseDiv = document.getElementById('verify-response');
+                var resultPre = document.getElementById('verify-result');
+                var statusBadge = document.getElementById('verify-status');
+                
+                responseDiv.style.display = 'block';
+                resultPre.textContent = JSON.stringify(result.data, null, 2);
+                statusBadge.textContent = result.status + ' ' + result.statusText;
+                statusBadge.className = 'badge ' + (result.success ? 'badge-success' : '');
+
+                if (result.success) {
+                    log('✅ Email verified! You can now log in.', 'success');
+                } else {
+                    log('❌ Verification failed: ' + (result.data?.message || 'Invalid token'), 'error');
+                }
+            });
+        }
+
+        // Email Functions
+        function fetchEmails() {
+            var email = document.getElementById('check-email').value;
+            if (!email) {
+                log('❌ Please enter email address to check', 'error');
+                return;
+            }
+
+            apiCall('/email/api/inbox?email=' + encodeURIComponent(email)).then(function(result) {
+                var container = document.getElementById('email-list');
+                var emails = result.data && Array.isArray(result.data) ? result.data : 
+                            (result.data && result.data.data && Array.isArray(result.data.data) ? result.data.data : []);
+                
+                if (!result.success || emails.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No emails found for ' + email + '</p></div>';
+                    log('ℹ️ No emails found for ' + email, 'warning');
+                    return;
+                }
+
+                log('📧 Found ' + emails.length + ' email(s) for ' + email, 'success');
+                
+                // Auto-fill verification token
+                for (var i = 0; i < emails.length; i++) {
+                    if (emails[i].metadata && emails[i].metadata.token) {
+                        document.getElementById('verify-token').value = emails[i].metadata.token;
+                        log('✅ Auto-filled verification token from email', 'success');
+                        break;
+                    }
+                }
+
+                container.innerHTML = emails.map(function(email) {
+                    var tokenSection = '';
+                    if (email.metadata && email.metadata.token) {
+                        tokenSection = '<div class="token-box"><div style="margin-bottom: 8px;"><strong>🔑 Verification Token:</strong></div><code>' + email.metadata.token + '</code><button class="btn btn-sm btn-primary" onclick="useToken(\'' + email.metadata.token + '\')" style="margin-top: 12px; width: 100%;">Use This Token</button></div>';
+                    }
+                    
+                    return '<div class="email-card"><div class="email-header"><div class="email-subject">' + (email.subject || 'No Subject') + '<span class="badge ' + (email.metadata && email.metadata.type === 'verification' ? 'badge-success' : '') + '">' + (email.metadata && email.metadata.type ? email.metadata.type : 'email') + '</span></div><div class="email-meta">To: ' + email.to + ' • From: ' + email.from + ' • ' + new Date(email.sentAt).toLocaleString() + '</div></div><div class="email-body">' + tokenSection + '<div class="email-content">' + (email.html || email.text || 'No content') + '</div></div></div>';
+                }).join('');
+            });
+        }
+
+        function useToken(token) {
+            document.getElementById('verify-token').value = token;
+            switchTab('auth', document.querySelectorAll('.tab')[0]);
+            log('✅ Token copied to verification form', 'success');
+            document.getElementById('verify-token').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function clearEmails() {
+            var email = document.getElementById('check-email').value;
+            apiCall('/email/clear', {
+                method: 'POST',
+                body: JSON.stringify(email ? { email: email } : {})
+            }).then(function(result) {
+                if (result.success) {
+                    document.getElementById('email-list').innerHTML = '<div class="empty-state"><div class="empty-state-icon">🗑️</div><p>Inbox cleared</p></div>';
+                    log('🗑️ Emails cleared', 'success');
+                }
+            });
+        }
+
+        // User Functions
+        function getProfile() {
+            var token = document.getElementById('user-token').value;
+            if (!token) {
+                log('❌ Please provide access token', 'error');
+                return;
+            }
+            window.accessToken = token;
+            
+            apiCall('/auth/profile').then(function(result) {
+                var responseDiv = document.getElementById('user-response');
+                var resultPre = document.getElementById('user-result');
+                var statusBadge = document.getElementById('user-status');
+                
+                responseDiv.style.display = 'block';
+                resultPre.textContent = JSON.stringify(result.data, null, 2);
+                statusBadge.textContent = result.status + ' ' + result.statusText;
+                statusBadge.className = 'badge ' + (result.success ? 'badge-success' : '');
+            });
+        }
+
+        function refreshAccessToken() {
+            if (!window.refreshTokenValue) {
+                log('❌ No refresh token available', 'error');
+                return;
+            }
+            
+            apiCall('/auth/refresh', {
+                method: 'POST',
+                body: JSON.stringify({ refreshToken: window.refreshTokenValue })
+            }).then(function(result) {
+                if (result.success && result.data && result.data.data && result.data.data.access_token) {
+                    window.accessToken = result.data.data.access_token;
+                    localStorage.setItem('access-token', window.accessToken);
+                    document.getElementById('user-token').value = window.accessToken;
+                    log('✅ Token refreshed successfully', 'success');
+                }
+            });
+        }
+
+        function logout() {
+            if (!window.refreshTokenValue) {
+                log('❌ No refresh token to revoke', 'error');
+                return;
+            }
+            
+            apiCall('/auth/logout', {
+                method: 'POST',
+                body: JSON.stringify({ refreshToken: window.refreshTokenValue })
+            }).then(function() {
+                window.accessToken = '';
+                window.refreshTokenValue = '';
+                localStorage.removeItem('access-token');
+                localStorage.removeItem('refresh-token');
+                document.getElementById('user-token').value = '';
+                log('🚪 Logged out successfully', 'success');
+            });
+        }
+
+        // Utilities
+        function switchTab(tabName, element) {
+            document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+            document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
+            
+            if (element) element.classList.add('active');
+            document.getElementById('tab-' + tabName).classList.add('active');
+        }
+
+        function fillRegister() {
+            var random = Math.random().toString(36).substring(7);
+            document.getElementById('reg-email').value = 'test' + random + '@example.com';
+            document.getElementById('reg-password').value = 'password123';
+            document.getElementById('reg-firstname').value = 'Test';
+            document.getElementById('reg-lastname').value = 'User';
+            log('📝 Auto-filled registration form', 'info');
+        }
+
+        function checkEmailInbox() {
+            window.open(window.API_BASE + '/email/inbox', '_blank');
+        }
+
+        function openSwagger() {
+            window.open(window.API_BASE.replace('/api/v1', '/api/docs'), '_blank');
+        }
+
+        function clearAllData() {
+            localStorage.clear();
+            window.accessToken = '';
+            window.refreshTokenValue = '';
+            log('🗑️ All local data cleared', 'warning');
+            location.reload();
+        }
+
+        function setEndpoint(endpoint) {
+            window.API_BASE = endpoint;
+            localStorage.setItem('api-endpoint', endpoint);
+            document.getElementById('api-endpoint').textContent = endpoint;
+            log('🌐 API endpoint changed to: ' + endpoint, 'info');
+            checkApiStatus();
+        }
+
+        function checkApiStatus() {
+            fetch(window.API_BASE + '/health').then(function(response) {
+                var badge = document.getElementById('api-status-badge');
+                var text = document.getElementById('api-status-text');
+                if (response.ok) {
+                    badge.className = 'status-badge status-online';
+                    text.textContent = 'Connected';
+                } else {
+                    throw new Error('Not OK');
+                }
+            }).catch(function() {
+                var badge = document.getElementById('api-status-badge');
+                var text = document.getElementById('api-status-text');
+                badge.className = 'status-badge status-offline';
+                text.textContent = 'Disconnected';
+            });
+        }
+    </script>
+</body>
+</html>

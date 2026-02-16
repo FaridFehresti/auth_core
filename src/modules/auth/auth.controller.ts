@@ -1,8 +1,9 @@
-import { Controller, Post, Body, UnauthorizedException, Ip, Headers } from '@nestjs/common';
+import { Controller, Post, Body, UnauthorizedException, Ip, Headers, Get, Query } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { Public } from './decorators/public.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -33,5 +34,10 @@ export class AuthController {
     @Headers('user-agent') userAgent: string,
   ) {
     return this.authService.refreshTokens(dto, ip, userAgent);
+  }
+  @Public()
+  @Get('verify-email')
+  async verifyEmail(@Query('token') token: string) {
+    return this.authService.verifyEmail(token);
   }
 }
