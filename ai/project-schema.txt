@@ -1,0 +1,88 @@
+life-os/
+├── src/
+│   ├── main.ts
+│   ├── app.module.ts
+│   ├── config/
+│   │   ├── app.config.ts
+│   │   ├── database.config.ts
+│   │   ├── jwt.config.ts
+│   │   ├── redis.config.ts
+│   │   └── validation.schema.ts
+│   ├── common/
+│   │   ├── decorators/
+│   │   │   ├── current-user.decorator.ts
+│   │   │   ├── public.decorator.ts
+│   │   │   ├── require-permissions.decorator.ts
+│   │   │   └── tenant.decorator.ts
+│   │   ├── filters/
+│   │   │   └── all-exceptions.filter.ts
+│   │   ├── guards/
+│   │   │   └── (empty - guards are in auth module)
+│   │   ├── interceptors/
+│   │   │   ├── logging.interceptor.ts
+│   │   │   └── response.interceptor.ts
+│   │   └── utils/
+│   ├── modules/
+│   │   ├── auth/
+│   │   │   ├── auth.module.ts
+│   │   │   ├── auth.controller.ts
+│   │   │   ├── auth.service.ts
+│   │   │   ├── auth.repository.ts
+│   │   │   ├── dto/
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── login.dto.ts
+│   │   │   │   ├── register.dto.ts
+│   │   │   │   ├── refresh-token.dto.ts
+│   │   │   │   ├── token-payload.dto.ts
+│   │   │   │   └── token-response.dto.ts
+│   │   │   ├── entities/
+│   │   │   │   └── (uses user entity from users module)
+│   │   │   ├── strategies/
+│   │   │   │   ├── jwt.strategy.ts
+│   │   │   │   ├── refresh.strategy.ts
+│   │   │   │   └── api-key.strategy.ts
+│   │   │   ├── guards/
+│   │   │   │   ├── jwt-auth.guard.ts
+│   │   │   │   ├── permissions.guard.ts
+│   │   │   │   └── api-key-auth.guard.ts
+│   │   │   └── decorators/
+│   │   │       └── current-user.decorator.ts
+│   │   ├── users/
+│   │   │   ├── users.module.ts
+│   │   │   ├── users.service.ts
+│   │   │   ├── users.controller.ts
+│   │   │   └── entities/
+│   │   │       └── user.entity.ts
+│   │   ├── roles/
+│   │   │   ├── roles.module.ts
+│   │   │   └── entities/
+│   │   │       └── role.entity.ts
+│   │   ├── permissions/
+│   │   │   ├── permissions.module.ts
+│   │   │   └── entities/
+│   │   │       └── permission.entity.ts
+│   │   ├── sessions/
+│   │   │   ├── sessions.module.ts
+│   │   │   ├── sessions.service.ts
+│   │   │   └── entities/
+│   │   │       └── session.entity.ts
+│   │   ├── audit/
+│   │   │   ├── audit.module.ts
+│   │   │   └── audit.service.ts
+│   │   └── health/
+│   │       ├── health.module.ts
+│   │       └── health.controller.ts
+│   ├── shared/
+│   │   ├── events/
+│   │   │   ├── events.module.ts
+│   │   │   └── events.service.ts
+│   │   └── auth-sdk/
+│   │       ├── auth-client.module.ts
+│   │       ├── auth-client.service.ts
+│   │       ├── constants.ts
+│   │       └── interfaces.ts
+│   └── database/
+│       └── (migrations folder)
+├── .env
+├── docker-compose.yml
+└── package.json

@@ -1,0 +1,212 @@
+Overview
+The User Module provides complete user management functionality with role-based access control, supporting both administrative operations and self-service profile management.
+Architecture
+plain
+Copy
+src/modules/users/
+├── users.module.ts          # Module definition
+├── users.controller.ts      # HTTP request handlers
+├── users.service.ts         # Business logic
+├── entities/
+│   └── user.entity.ts       # TypeORM entity
+└── dto/
+    ├── index.ts             # DTO exports
+    ├── create-user.dto.ts   # User creation
+    ├── update-user.dto.ts   # User updates (admin)
+    ├── update-profile.dto.ts # Self-service updates
+    ├── change-password.dto.ts # Password change
+    ├── user-response.dto.ts # Response serialization
+    └── user-query.dto.ts    # Query parameters
+User Entity
+Table
+Copy
+Field	Type	Description
+id	UUID	Primary key
+email	string	Unique, indexed
+password	string	Hashed (bcrypt)
+firstName	string	User's first name
+lastName	string	User's last name
+emailVerified	boolean	Email verification status
+isActive	boolean	Account active status
+failedLoginAttempts	number	Login failure counter
+lockedUntil	Date	Account lock expiry
+lastLoginAt	Date	Last successful login
+mfaEnabled	boolean	MFA status
+mfaSecret	string	MFA secret key
+roles	Role[]	Many-to-many relationship
+sessions	Session[]	One-to-many relationship
+createdAt	Date	Creation timestamp
+updatedAt	Date	Update timestamp
+Virtual Property: fullName - Returns "firstName lastName"
+API Endpoints
+Administrative Endpoints (Require Permissions)
+Table
+Copy
+Method	Endpoint	Permission	Description
+GET	/users	users:read	List users with pagination, search, filters
+GET	/users/stats	users:read	User statistics dashboard
+POST	/users	users:create	Create new user
+GET	/users/:id	users:read	Get specific user by ID
+PUT	/users/:id	users:update	Update any user
+PATCH	/users/:id/status	users:update	Activate/deactivate user
+DELETE	/users/:id	users:delete	Delete user (prevents last admin deletion)
+Self-Service Endpoints (Authenticated Users)
+Table
+Copy
+Method	Endpoint	Description
+GET	/users/me/profile	Get own profile
+PUT	/users/me/profile	Update own profile (resets email verification if email changed)
+POST	/users/me/change-password	Change own password (requires current password)
+DTOs Reference
+CreateUserDto
+TypeScript
+Copy
+{
+  email: string;           // Valid email, unique
+  password: string;        // Min 8 characters
+  firstName: string;       // Required
+  lastName: string;        // Required
+  isActive?: boolean;      // Default: true
+  roleIds?: string[];      // UUID array
+}
+UpdateUserDto
+Extends CreateUserDto (all optional) plus:
+TypeScript
+Copy
+{
+  password?: string;       // Optional, min 8 chars
+  emailVerified?: boolean; // Admin can verify
+  mfaEnabled?: boolean;    // Admin can toggle MFA
+}
+UpdateProfileDto
+TypeScript
+Copy
+{
+  firstName?: string;
+  lastName?: string;
+  email?: string;          // Triggers re-verification
+}
+ChangePasswordDto
+TypeScript
+Copy
+{
+  currentPassword: string; // Must match existing
+  newPassword: string;     // Min 8, complexity required
+}
+UserQueryDto (Query Parameters)
+TypeScript
+Copy
+{
+  page?: number;           // Default: 1
+  limit?: number;          // Default: 10
+  search?: string;         // Searches email, firstName, lastName
+  isActive?: boolean;      // Filter by status
+  emailVerified?: boolean; // Filter by verification
+  sortBy?: 'createdAt' | 'email' | 'lastName' | 'lastLoginAt';
+  sortOrder?: 'ASC' | 'DESC'; // Default: DESC
+}
+Security Features
+Authentication
+JWT Auth Guard: All endpoints require valid JWT token
+Permissions Guard: Enforces role-based access
+CurrentUser Decorator: Injects authenticated user into handlers
+Password Security
+Hashing: bcrypt with 12 rounds
+Validation: Min 8 chars, uppercase, lowercase, number/special char
+Change Requirements: Current password required for changes
+Access Control
+Self-Service Protection: Users can only modify their own profile/password
+Admin Protection: Cannot delete the last admin user
+Email Verification: Changing email resets verification status
+Data Protection
+Response Serialization: Passwords never returned in responses
+Query Building: Parameterized queries prevent SQL injection
+Service Methods
+Core CRUD
+Table
+Copy
+Method	Description
+findAll(query)	Paginated list with filters
+findById(id)	Get user by ID (basic)
+findByIdWithRoles(id)	Get user with roles (throws 404)
+findByEmail(email, withPassword?)	Get by email, optionally with password
+createUser(dto)	Create with hashed password
+updateUser(id, dto)	Full update with email uniqueness check
+deleteUser(id)	Remove with last-admin protection
+Profile Management
+Table
+Copy
+Method	Description
+updateProfile(userId, dto)	Self-service update, resets verification
+changePassword(userId, dto)	Verifies current password before change
+toggleUserStatus(id, isActive)	Activate/deactivate
+Utility
+Table
+Copy
+Method	Description
+updateLastLogin(id)	Update timestamp (auth service uses)
+incrementFailedAttempts(id)	Track failed logins
+getUserStats()	Dashboard statistics
+update(id, data)	Generic update (legacy)
+Usage Examples
+Create User (Admin)
+bash
+Copy
+POST /users
+Authorization: Bearer {admin-token}
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "SecurePass123!",
+  "firstName": "John",
+  "lastName": "Doe",
+  "roleIds": ["uuid-role-1"]
+}
+List Users with Filters
+bash
+Copy
+GET /users?search=john&isActive=true&page=1&limit=20
+Authorization: Bearer {token}
+Update Own Profile
+bash
+Copy
+PUT /users/me/profile
+Authorization: Bearer {user-token}
+
+{
+  "firstName": "Johnny",
+  "email": "newemail@example.com"  // Triggers re-verification
+}
+Change Password
+bash
+Copy
+POST /users/me/change-password
+Authorization: Bearer {token}
+
+{
+  "currentPassword": "OldPass123!",
+  "newPassword": "NewSecurePass456!"
+}
+Integration Points
+Auth Module
+Uses UsersService.findByEmail() for login validation
+Uses UsersService.updateLastLogin() on successful auth
+Uses UsersService.incrementFailedAttempts() on failed login
+Roles Module
+Many-to-many relationship via user_roles join table
+Eager loaded in most queries
+Sessions Module
+One-to-many relationship tracked
+Used for concurrent session limits
+Audit Module
+All admin actions should be logged via AuditService
+Error Handling
+Table
+Copy
+Error	Code	Scenario
+NotFoundException	404	User ID not found
+ConflictException	409	Email already exists
+BadRequestException	400	Invalid current password
+ForbiddenException	403	Deleting last admin
+UnauthorizedException	401	Invalid/missing token
