@@ -39,7 +39,12 @@ import {
     FindByEmailDto,
 } from './dto';
 import { User } from './entities/user.entity';
-
+import { IsArray, IsUUID } from 'class-validator';
+export class UpdateUserRolesDto {
+  @IsArray()
+  @IsUUID('4', { each: true })
+  roleIds: string[];
+}
 @ApiTags('Users')
 @Controller('users')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -60,6 +65,26 @@ export class UsersController {
             data: result.data.map(user => plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true })),
         };
     }
+    @Get('by-email')
+@CanRead('users')
+@ApiOperation({ summary: 'Find user by email' })
+async findByEmail(@Query() query: FindByEmailDto) {
+  const user = await this.usersService.findByEmail(query.email, true);
+  if (!user) {
+    throw new NotFoundException('User not found');
+  }
+  return user;
+}
+@Patch(':id/roles')
+@CanUpdate('users')
+@ApiOperation({ summary: 'Update user roles' })
+async updateUserRoles(
+  @Param('id', ParseUUIDPipe) id: string,
+  @Body() dto: UpdateUserRolesDto,
+) {
+  const user = await this.usersService.updateUser(id, { roleIds: dto.roleIds });
+  return plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true });
+}
 
     @Get('stats')
     @CanRead('users')
@@ -133,16 +158,7 @@ export class UsersController {
         return plainToInstance(UserResponseDto, updatedUser, { excludeExtraneousValues: true });
     }
 
-   @Get('by-email')
-@CanRead('users')
-@ApiOperation({ summary: 'Find user by email' })
-async findByEmail(@Query() query: FindByEmailDto) {
-  const user = await this.usersService.findByEmail(query.email, true);
-  if (!user) {
-    throw new NotFoundException('User not found');
-  }
-  return user;
-}
+   
     @Post('me/change-password')
     @HttpCode(HttpStatus.NO_CONTENT)
     @ApiOperation({ summary: 'Change current user password' })
